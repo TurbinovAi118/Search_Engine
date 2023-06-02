@@ -2,8 +2,8 @@ package engine.services;
 
 
 
-import com.google.protobuf.Api;
 import engine.dto.ApiResponse;
+import engine.models.Page;
 import engine.models.Site;
 import engine.models.enums.SiteStatus;
 import engine.repositories.SiteRepository;
@@ -47,6 +47,7 @@ public class SiteServiceImpl implements SiteService {
         site.setSiteName(name);
         site.setStatus(SiteStatus.NOT_INDEXED);
         site.setStatusTime(LocalDateTime.now());
+        site.setPageId(new ArrayList<>());
         siteRepository.save(site);
         response.setResult(true);
         return response;
@@ -91,12 +92,14 @@ public class SiteServiceImpl implements SiteService {
         if (site.getLastError() != null && !siteToPatch.getLastError().equals(site.getLastError())){
             siteToPatch.setLastError(site.getLastError());
         }
-        if (!siteToPatch.getPageList().equals(site.getPageList())){
-            siteToPatch.setPageList(site.getPageList());
+        if (!siteToPatch.getPageId().equals(site.getPageId())){
+            siteToPatch.setPageId(site.getPageId());
         }
         if (!siteToPatch.getStatus().equals(site.getStatus())){
             siteToPatch.setStatus(site.getStatus());
         }
+
+
         siteToPatch.setStatusTime(LocalDateTime.now());
 
         siteRepository.save(siteToPatch);

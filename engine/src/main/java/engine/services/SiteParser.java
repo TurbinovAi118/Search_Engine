@@ -1,6 +1,5 @@
 package engine.services;
 
-import engine.models.Site;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -9,10 +8,11 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+
 import java.util.concurrent.RecursiveTask;
 
-public class SiteParser extends RecursiveTask<Set<String>> {
+public class SiteParser extends RecursiveTask<Map<String, String>> {
 
     private String url;
 
@@ -22,8 +22,8 @@ public class SiteParser extends RecursiveTask<Set<String>> {
 
     private boolean checkLink(String url){
         try {
-            if ((!RunnableIndexer.currentUrl.equals(url) && !RunnableIndexer.currentUrl.equals(url +"/")) && url.startsWith(RunnableIndexer.currentUrl)
-                    && !RunnableIndexer.pages.contains(url) && !url.substring(url.lastIndexOf("/")).contains("#")
+            if ((!IndexRunnable.currentUrl.equals(url) && !IndexRunnable.currentUrl.equals(url +"/")) && url.startsWith(IndexRunnable.currentUrl)
+                    && !IndexRunnable.pages.containsKey(url) && !url.substring(url.lastIndexOf("/")).contains("#")
                     && !url.endsWith(".pdf") && !url.endsWith("#")) {
                 int parentStatusCode = Jsoup.connect(url).ignoreHttpErrors(true).execute().statusCode();
                 if (parentStatusCode == 200){
@@ -45,7 +45,7 @@ public class SiteParser extends RecursiveTask<Set<String>> {
     }
 
     @Override
-    protected Set<String> compute() {
+    protected Map<String, String> compute() {
         List<SiteParser> taskList = new ArrayList<>();
         Document doc;
         try {
@@ -59,19 +59,19 @@ public class SiteParser extends RecursiveTask<Set<String>> {
             for (Element element : docElements){
                 String href = element.attr("abs:href");
                 if (checkLink(href)){
-                    System.out.println(href);
                     SiteParser task = new SiteParser(href);
                     task.fork();
                     taskList.add(task);
-                    RunnableIndexer.pages.add(url);
+                    IndexRunnable.pages.put(url, doc.html());
                 }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         for (SiteParser task : taskList) {
-            RunnableIndexer.pages.addAll(task.join());
+            IndexRunnable.pages.putAll(task.join());
+
         }
-        return RunnableIndexer.pages;
+        return IndexRunnable.pages;
     }
 }

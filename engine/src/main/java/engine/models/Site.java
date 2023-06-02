@@ -4,6 +4,7 @@ import engine.models.enums.SiteStatus;
 import lombok.*;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class Site {
+public class Site implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,9 +39,6 @@ public class Site {
     private String siteName;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<Page> pageList;
+    private List<Page> pageId;
 
-    public void addPage(Page page) {
-        this.pageList.add(page);
-    }
 }

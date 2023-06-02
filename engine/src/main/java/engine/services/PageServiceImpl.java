@@ -44,7 +44,7 @@ public class PageServiceImpl implements PageService {
         Optional<Page> pageOptional = pageRepository.findById(id);
         if (pageOptional.isEmpty()){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-    }
+        }
         return new ResponseEntity<>(pageOptional.get(), HttpStatus.OK);
     }
 
@@ -65,5 +65,10 @@ public class PageServiceImpl implements PageService {
         List<String> pathList = new ArrayList<>();
         pageIterable.forEach(page -> pathList.add(page.getPath()));
         return pathList;
+    }
+
+    @Override
+    public List<Page> findPagesBySiteId(int id) {
+        return pageRepository.getPageBySiteId(id);
     }
 }

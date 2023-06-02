@@ -3,6 +3,7 @@ package engine.models;
 import lombok.*;
 
 import javax.persistence.*;
+import java.io.Serializable;
 
 @Entity
 @Table(name = "page", indexes = @Index(name = "fn_index", columnList = "path"))
@@ -11,7 +12,7 @@ import javax.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class Page {
+public class Page implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,4 +31,11 @@ public class Page {
 
     @Column(name = "content", nullable = false, columnDefinition = "mediumtext")
     private String content;
+
+    public Page(Site site, String path, int responseCode, String content) {
+        this.site = site;
+        this.path = path;
+        this.responseCode = responseCode;
+        this.content = content;
+    }
 }

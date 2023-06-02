@@ -17,4 +17,6 @@ public interface PageService {
 
     List<String> pathList();
 
+    List<Page> findPagesBySiteId(int id);
+
 }
