@@ -6,7 +6,6 @@ import lombok.*;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "site")
@@ -38,7 +37,11 @@ public class Site implements Serializable {
     @Column(name = "name", nullable = false)
     private String siteName;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<Page> pageId;
-
+    public Site(SiteStatus status, LocalDateTime statusTime, String lastError, String siteUrl, String siteName) {
+        this.status = status;
+        this.statusTime = statusTime;
+        this.lastError = lastError;
+        this.siteUrl = siteUrl;
+        this.siteName = siteName;
+    }
 }

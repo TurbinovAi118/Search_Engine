@@ -1,50 +1,60 @@
 package engine.services;
 
+import engine.config.SiteConfig;
+import engine.config.SitesConfigList;
 import engine.models.Page;
 import engine.models.Site;
 import engine.models.enums.SiteStatus;
+import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ForkJoinPool;
 
-public class IndexRunnable implements Runnable {
+@RequiredArgsConstructor
+public class IndexRunnable implements Runnable /*Callable<Boolean>*/ {
 
     private final SiteService siteService;
     private final PageService pageService;
-
-    protected static String currentUrl;
-    protected static Map<String, String> pages = Collections.synchronizedMap(new HashMap<>());
+    private final SitesConfigList sites;
 
 
-    public IndexRunnable(SiteService siteService, PageService pageService) {
-        this.siteService = siteService;
-        this.pageService = pageService;
-    }
 
     @Override
     public void run() {
+        for (SiteConfig site : sites.getSites()){
+            siteService.findBySiteUrl(site.getUrl()).ifPresent(value -> siteService.delete(value.getId()));
+            siteService.add(new Site(SiteStatus.INDEXING, LocalDateTime.now(), null, site.getUrl(), site.getName()));
+        }
+        IndexingServiceImpl.pageList.clear();
         List<Site> sitesToIndex = siteService.list();
+
         if (sitesToIndex.size() >= 1) {
             for (Site site : sitesToIndex) {
-                site.setStatus(SiteStatus.INDEXING);
-                siteService.patch(site);
-
-                currentUrl = site.getSiteUrl();
-                SiteParser parser = new SiteParser(currentUrl);
-                pages = new ForkJoinPool().invoke(parser);
-
-                List<String> pathList = pageService.pathList();
-
-                for (String page : pages.keySet()){
-                    String path = currentUrl.endsWith("/") ?
-                            page.replace(currentUrl, "/") :
-                            page.replace(currentUrl, "");
-                    if (path.length() > 1 && !pathList.contains(path)) {
-                        Page parsedPage = new Page(site, path, 200, pages.get(page));
-                        pageService.add(parsedPage);
-                    }
+                if (site.getStatus() != SiteStatus.INDEXING) {
+                    site.setStatus(SiteStatus.INDEXING);
+                    siteService.patch(site);
                 }
+                SiteParser parser = new SiteParser(site.getSiteUrl(), site, pageService, siteService);
+                ForkJoinPool pool= new ForkJoinPool();
+                pool.invoke(parser);
+                pool.shutdown();
             }
         }
+        System.out.println(IndexingServiceImpl.pageList);
+        if (IndexingServiceImpl.pageList.size() > 0) {
+            pageService.addAll(IndexingServiceImpl.pageList);
+        }
+        IndexingServiceImpl.pageList.clear();
+        System.out.println("indexed");
+
     }
+
+//    public IndexRunnable(SiteService siteService, PageService pageService) {
+//        this.siteService = siteService;
+//        this.pageService = pageService;
+//    }
+
+
 }

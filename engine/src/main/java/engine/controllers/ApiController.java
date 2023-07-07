@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-
 @RequestMapping("/api")
 @RestController
 public class ApiController {
@@ -27,7 +26,7 @@ public class ApiController {
 
     @PostMapping("/indexPage")
     public ResponseEntity<ApiResponse> add(@RequestParam Map<String, String> body){
-        return ResponseEntity.ok(siteService.add(body.get("url")));
+        return ResponseEntity.ok(siteService.addCustom(body.get("url")));
     }
 
     @GetMapping("/statistics")

@@ -1,22 +1,25 @@
 package engine.services;
 
 import engine.models.Page;
-import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PageService {
 
-    ResponseEntity<Page> add(Page page);
+    void add(Page page);
+
+    void addAll(List<Page> pageList);
 
     List<Page> list();
 
-    ResponseEntity<Page> findById(int id);
+    Optional<Page> findById(int id);
 
-    ResponseEntity<?> delete(int id);
-
-    List<String> pathList();
+    void delete(int id);
 
     List<Page> findPagesBySiteId(int id);
 
+    Boolean existPageByPath(String path);
+
+    Integer countPagesBySiteId(int id);
 }

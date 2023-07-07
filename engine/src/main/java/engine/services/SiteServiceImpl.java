@@ -1,36 +1,40 @@
 package engine.services;
 
-
-
 import engine.dto.ApiResponse;
-import engine.models.Page;
 import engine.models.Site;
 import engine.models.enums.SiteStatus;
 import engine.repositories.SiteRepository;
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class SiteServiceImpl implements SiteService {
+public class SiteServiceImpl implements SiteService{
 
     private final SiteRepository siteRepository;
-    Document doc;
 
     public SiteServiceImpl(SiteRepository siteRepository) {
         this.siteRepository = siteRepository;
     }
 
     @Override
-    public ApiResponse add(String url) {
+    public ApiResponse addCustom(String url) {
+        Document doc;
         ApiResponse response = new ApiResponse();
+        if (url.isEmpty()){
+            response.setResult(false);
+            response.setError("Введите адресс");
+            return response;
+        }
         try {
             doc = Jsoup.connect(url).userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                     "AppleWebKit/537.36 (KHTML, like Gecko) " +
@@ -41,68 +45,70 @@ public class SiteServiceImpl implements SiteService {
             response.setError("Введен не верный адресс.");
             return response;
         }
-        Site site = new Site();
+        if (existsBySiteUrl(url)){
+            response.setResult(false);
+            response.setError("Такой сайт уже присутствует в базе данных.");
+            return response;
+        }
         String name = doc.select("head").select("title").text();
-        site.setSiteUrl(url);
-        site.setSiteName(name);
-        site.setStatus(SiteStatus.NOT_INDEXED);
-        site.setStatusTime(LocalDateTime.now());
-        site.setPageId(new ArrayList<>());
+        Site site = new Site(SiteStatus.NOT_INDEXED, LocalDateTime.now(), null, url, name);
         siteRepository.save(site);
         response.setResult(true);
         return response;
     }
 
     @Override
-    public ResponseEntity<Site> findById(int id) {
-        Optional<Site> siteOptional = siteRepository.findById(id);
-        if (siteOptional.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-        return new ResponseEntity<>(siteOptional.get(), HttpStatus.OK);
+    public ApiResponse add(Site site) {
+        ApiResponse response = new ApiResponse();
+        siteRepository.save(site);
+        response.setResult(true);
+        return response;
+    }
+
+    @Override
+    public Optional<Site> findById(int id) {
+        return siteRepository.findById(id);
     }
 
     @Override
     public List<Site> list() {
-        Iterable<Site> siteIterable = siteRepository.findAll();
         List<Site> siteList = new ArrayList<>();
-        siteIterable.forEach(siteList::add);
+        siteRepository.findAll().forEach(siteList::add);
         return siteList;
     }
 
     @Override
-    public ResponseEntity<?> delete(int id) {
-        if (findById(id).getStatusCode().equals(HttpStatus.NOT_FOUND)){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-        Site siteToDelete = findById(id).getBody();
-        assert siteToDelete != null;
-        siteRepository.delete(siteToDelete);
-        return ResponseEntity.status(HttpStatus.OK).body(null);
+    public void delete(int id) {
+        findById(id).ifPresent(siteRepository::delete);
     }
 
     @Override
-    public ResponseEntity<Site> patch(Site site) {
-        if (findById(site.getId()).getStatusCode().equals(HttpStatus.NOT_FOUND)){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-        Site siteToPatch = findById(site.getId()).getBody();
-        assert siteToPatch != null;
+    public void patch(Site site) {
+        Optional<Site> siteOptional = findById(site.getId());
+        if (siteOptional.isPresent()) {
+            Site siteToPatch = siteOptional.get();
+            if (site.getLastError() != null && !siteToPatch.getLastError().equals(site.getLastError())) {
+                siteToPatch.setLastError(site.getLastError());
+            }
+            if (!siteToPatch.getStatus().equals(site.getStatus())) {
+                siteToPatch.setStatus(site.getStatus());
+            }
 
-        if (site.getLastError() != null && !siteToPatch.getLastError().equals(site.getLastError())){
-            siteToPatch.setLastError(site.getLastError());
-        }
-        if (!siteToPatch.getPageId().equals(site.getPageId())){
-            siteToPatch.setPageId(site.getPageId());
-        }
-        if (!siteToPatch.getStatus().equals(site.getStatus())){
-            siteToPatch.setStatus(site.getStatus());
-        }
+            siteToPatch.setStatusTime(LocalDateTime.now());
 
-
-        siteToPatch.setStatusTime(LocalDateTime.now());
-
-        siteRepository.save(siteToPatch);
-        return new ResponseEntity<>(siteToPatch, HttpStatus.OK);
+            siteRepository.save(siteToPatch);
+        }
     }
+
+    @Override
+    public Optional<Site> findBySiteUrl(String url) {
+        return siteRepository.findBySiteUrl(url);
+    }
+
+    @Override
+    public Boolean existsBySiteUrl(String url) {
+        return siteRepository.existsBySiteUrl(url);
+    }
+
+
 }

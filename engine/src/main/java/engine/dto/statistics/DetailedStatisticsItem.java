@@ -1,7 +1,7 @@
 package engine.dto.statistics;
 
-import lombok.Data;
 import engine.models.enums.SiteStatus;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 

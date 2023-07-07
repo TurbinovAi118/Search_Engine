@@ -1477,6 +1477,9 @@
                                 $this.after('<div class="API-error">' + result.error + '</div>');
                             }
                         }
+                        window.setTimeout(function(){
+                            API(send.statistics).init()
+                        }, 100);
                     }
                 },
                 stopIndexing: {
@@ -1496,6 +1499,7 @@
                             } else {
                                 $this.after('<div class="API-error">' + result.error + '</div>');
                             }
+                            shiftCheck($this);
                         }
                     }
                 },

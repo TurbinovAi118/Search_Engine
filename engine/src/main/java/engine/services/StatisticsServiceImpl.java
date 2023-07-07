@@ -1,40 +1,44 @@
 package engine.services;
 
-
+import engine.config.SiteConfig;
+import engine.config.SitesConfigList;
 import engine.dto.statistics.DetailedStatisticsItem;
 import engine.dto.statistics.StatisticsData;
 import engine.dto.statistics.StatisticsResponse;
 import engine.dto.statistics.TotalStatistics;
 import engine.models.Site;
+import engine.models.enums.SiteStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class StatisticsServiceImpl implements StatisticsService{
 
     private final SiteService siteService;
+    private final PageService pageService;
 
-    public StatisticsServiceImpl(SiteService siteService) {
-        this.siteService = siteService;
-    }
 
     @Override
     public StatisticsResponse getStatistics() {
-        List<Site> siteList = siteService.list();
-
+        List<Site> sitesList = siteService.list();
         TotalStatistics total = new TotalStatistics();
-        total.setSites(siteList.size());
+        total.setSites(sitesList.size());
         total.setIndexing(true);
 
         List<DetailedStatisticsItem> detailed = new ArrayList<>();
-        for(Site site : siteList){
+        for(Site site : sitesList){
+
             DetailedStatisticsItem item = new DetailedStatisticsItem();
             item.setName(site.getSiteName());
             item.setUrl(site.getSiteUrl());
-            item.setPages(site.getPageId().size());
+            item.setPages(pageService.countPagesBySiteId(site.getId()));
             //
             item.setLemmas(0);
             //
