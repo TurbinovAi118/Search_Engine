@@ -1,6 +1,5 @@
 package engine.services;
 
-import engine.config.SiteConfig;
 import engine.config.SitesConfigList;
 import engine.dto.ApiResponse;
 import engine.models.Page;
@@ -9,11 +8,9 @@ import engine.models.enums.SiteStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.*;
 
 @Service
@@ -24,9 +21,11 @@ public class IndexingServiceImpl implements IndexingService{
     private final PageService pageService;
     private final SitesConfigList sites;
 
-    RunnableFuture<?> futureIndexer;
+    public static RunnableFuture<Boolean> futureIndexer;
 
-    private boolean isIndexing = false;
+    public static ExecutorService executor;
+
+    public static boolean isIndexing = false;
 
     public static List<Page> pageList = Collections.synchronizedList(new ArrayList<>());
 
@@ -39,36 +38,10 @@ public class IndexingServiceImpl implements IndexingService{
             return response;
         }
         isIndexing = true;
-
-
-//        pageList.clear();
-//        List<Site> sitesToIndex = siteService.list();
-//        if (sitesToIndex.size() >= 1) {
-//            for (Site site : sitesToIndex) {
-//                site.setStatus(SiteStatus.INDEXING);
-//                siteService.patch(site);
-//                SiteParser parser = new SiteParser(site.getSiteUrl(), site, pageService, siteService);
-//                ForkJoinPool pool= new ForkJoinPool();
-//                pool.invoke(parser);
-//            }
-//        }
-//        System.out.println(pageList);
-//        if (pageList.size() > 0) {
-//            pageService.addAll(pageList);
-//        }
-//        pageList.clear();
-//        System.out.println("indexed");
-//        isIndexing = false;
-
-
-        ExecutorService executor = Executors.newFixedThreadPool(2);
+        executor = Executors.newFixedThreadPool(2);
         futureIndexer = new FutureTask<>(new IndexRunnable(siteService, pageService, sites), true);
-        executor.execute(futureIndexer);
+        executor.submit(futureIndexer);
 
-        Runnable completeCatcher = this::futureCompleteCatcher;
-        executor.submit(completeCatcher);
-
-        executor.shutdown();
 
         response.setResult(true);
         return response;
@@ -78,6 +51,11 @@ public class IndexingServiceImpl implements IndexingService{
     public ApiResponse stopIndexing() {
         ApiResponse response = new ApiResponse();
         if (isIndexing){
+
+            futureIndexer.cancel(true);
+
+            System.out.println(futureIndexer);
+
             if (pageList.size() > 0) {
                 pageService.addAll(pageList);
                 pageList.clear();
@@ -90,7 +68,6 @@ public class IndexingServiceImpl implements IndexingService{
                     siteService.patch(site);
                 }
             }
-            futureIndexer.cancel(true);
 
             isIndexing = false;
             response.setError("Индексация остановлена пользователем");
@@ -102,19 +79,4 @@ public class IndexingServiceImpl implements IndexingService{
         return response;
     }
 
-    private void futureCompleteCatcher() {
-        while(!futureIndexer.isDone()){
-            if (futureIndexer.isCancelled()){
-                break;
-            }
-        }
-        siteService.list().forEach(site -> {
-            if (!site.getStatus().equals(SiteStatus.FAILED)) {
-                site.setStatus(SiteStatus.INDEXED);
-                siteService.patch(site);
-            }
-        });
-        if (!futureIndexer.isCancelled())
-            isIndexing = false;
-    }
 }

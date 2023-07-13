@@ -1,13 +1,13 @@
 indexing-settings:
   sites:
-    - url: http://e.kipu-rc.ru
-      name: Skillbox
+
 
 
 spring:
   jpa:
     hibernate:
       ddl-auto: update
+    open-in-view: true
   datasource:
     url: jdbc:mysql://localhost:3306/search_engine
     username: root

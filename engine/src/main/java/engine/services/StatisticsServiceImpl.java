@@ -30,7 +30,7 @@ public class StatisticsServiceImpl implements StatisticsService{
         List<Site> sitesList = siteService.list();
         TotalStatistics total = new TotalStatistics();
         total.setSites(sitesList.size());
-        total.setIndexing(true);
+        total.setIndexing(IndexingServiceImpl.isIndexing);
 
         List<DetailedStatisticsItem> detailed = new ArrayList<>();
         for(Site site : sitesList){

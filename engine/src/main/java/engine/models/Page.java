@@ -1,6 +1,6 @@
 package engine.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.*;
 
 import javax.persistence.*;
@@ -12,7 +12,6 @@ import java.io.Serializable;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
 public class Page implements Serializable {
 
     @Id

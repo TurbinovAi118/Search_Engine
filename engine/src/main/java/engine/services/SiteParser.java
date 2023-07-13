@@ -73,8 +73,11 @@ public class SiteParser extends RecursiveAction {
                     .get();
             Elements docElements = doc.select("a");
             for (Element element : docElements){
+                if (IndexingServiceImpl.futureIndexer.isCancelled()){
+                    break;
+                }
                 String href = element.attr("abs:href");
-                synchronized (pageService) {
+                synchronized (SiteParser.class) {
                     if (checkLink(href)) {
                         //
                         System.out.println(href);
@@ -84,8 +87,6 @@ public class SiteParser extends RecursiveAction {
                         IndexingServiceImpl.pageList.add(new Page(site, path, 200, doc.html()));
                         if (IndexingServiceImpl.pageList.size() >= 100)
                             multiInsertPages(IndexingServiceImpl.pageList);
-
-//                    pageService.add(new Page(site, path, 200, doc.html()));
                     }
                 }
             }
