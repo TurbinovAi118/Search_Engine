@@ -4,7 +4,7 @@ package engine.models;
 import lombok.*;
 
 import javax.persistence.*;
-import java.io.Serializable;
+import javax.persistence.Index;
 
 @Entity
 @Table(name = "page", indexes = @Index(name = "path_index", columnList = "path", unique = true))
@@ -12,7 +12,7 @@ import java.io.Serializable;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Page implements Serializable {
+public class Page {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

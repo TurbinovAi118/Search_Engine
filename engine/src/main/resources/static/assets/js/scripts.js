@@ -1467,9 +1467,6 @@
                             if ($this.next('.API-error').length) {
                                 $this.next('.API-error').remove();
                             }
-                            if ($this.is('[data-btntype="check"]')) {
-                                shiftCheck($this);
-                            }
                         } else {
                             if ($this.next('.API-error').length) {
                                 $this.next('.API-error').text(result.error);
@@ -1477,6 +1474,7 @@
                                 $this.after('<div class="API-error">' + result.error + '</div>');
                             }
                         }
+                        shiftCheck($this);
                         window.setTimeout(function(){
                             API(send.statistics).init()
                         }, 100);
@@ -1490,9 +1488,6 @@
                             if ($this.next('.API-error').length) {
                                 $this.next('.API-error').remove();
                             }
-                            if ($this.is('[data-btntype="check"]')) {
-                                shiftCheck($this);
-                            }
                         } else {
                             if ($this.next('.API-error').length) {
                                 $this.next('.API-error').text(result.error);
@@ -1500,6 +1495,7 @@
                                 $this.after('<div class="API-error">' + result.error + '</div>');
                             }
                         }
+                        shiftCheck($this);
                         window.setTimeout(function(){
                             API(send.statistics).init()
                         }, 100);
@@ -1687,7 +1683,7 @@
                     $element.find('.btn-content').text($element.data('alttext'));
                     $element.data('alttext', text);
                 }
-                if ($element.data('send') == 'startIndexing' || $element.data('send') == 'stopIndexing'){
+                if ($element.data('send') === 'startIndexing' || $element.data('send') === 'stopIndexing'){
                     if (check) {
                         $('.UpdatePageBlock').show(0)
                     } else {
@@ -1700,12 +1696,12 @@
                     var altsend = $element.data('altsend');
                     $element.data('altsend', $element.data('send'));
                     $element.data('send', altsend);
-                };
+                }
                 if (check) {
                     $element.addClass('btn_check');
                 } else {
                     $element.removeClass('btn_check');
-                };
+                }
                 if (!wave) {
                     $element.trigger('changeCheck');
                 }

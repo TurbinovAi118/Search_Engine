@@ -4,7 +4,6 @@ import engine.models.enums.SiteStatus;
 import lombok.*;
 
 import javax.persistence.*;
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,7 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class Site implements Serializable {
+public class Site {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

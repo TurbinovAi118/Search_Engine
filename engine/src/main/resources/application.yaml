@@ -1,7 +1,7 @@
 indexing-settings:
   sites:
-
-
+    - url: https://www.skillbox.ru
+      name: Skillbox
 
 spring:
   jpa:

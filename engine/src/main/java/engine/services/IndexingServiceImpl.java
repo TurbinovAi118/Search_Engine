@@ -21,7 +21,7 @@ public class IndexingServiceImpl implements IndexingService{
     private final PageService pageService;
     private final SitesConfigList sites;
 
-    public static RunnableFuture<Boolean> futureIndexer;
+    public static volatile RunnableFuture<Boolean> futureIndexer;
 
     public static ExecutorService executor;
 

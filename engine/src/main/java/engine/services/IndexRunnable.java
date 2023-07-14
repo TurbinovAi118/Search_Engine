@@ -28,7 +28,7 @@ public class IndexRunnable implements Runnable {
         IndexingServiceImpl.pageList.clear();
         List<Site> sitesToIndex = siteService.list();
 
-        if (sitesToIndex.size() >= 1) {
+        if (!sitesToIndex.isEmpty()) {
             for (Site site : sitesToIndex) {
                 if (site.getStatus() != SiteStatus.INDEXING) {
                     site.setStatus(SiteStatus.INDEXING);

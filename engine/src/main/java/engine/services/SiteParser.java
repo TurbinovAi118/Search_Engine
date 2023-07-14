@@ -32,25 +32,17 @@ public class SiteParser extends RecursiveAction {
         path = site.getSiteUrl().endsWith("/") ?
                 url.replace(site.getSiteUrl(), "/") :
                 url.replace(site.getSiteUrl(), "");
-        try {
-            if (!url.substring(url.lastIndexOf("/")).contains("#")
-                    && !path.endsWith(".pdf")
-                    && !url.endsWith("#")
-                    && url.startsWith(site.getSiteUrl())
-                    && !site.getSiteUrl().equals(url)
-                    && !path.equals("/")
-                    && !IndexingServiceImpl.pageList.stream().map(Page::getPath).collect(Collectors.toList()).contains(path)
-                    && !pageService.existPageByPath(path)
-            ) {
-                int parentStatusCode = Jsoup.connect(url).ignoreHttpErrors(true).execute().statusCode();
-                if (parentStatusCode == 200) {
-                    return true;
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return false;
+
+        return !url.substring(url.lastIndexOf("/")).contains("#")
+                && !url.substring(url.lastIndexOf("/")).contains("?")
+                && !url.substring(url.lastIndexOf("/")).contains("&")
+                && !path.endsWith(".pdf")
+                && !url.endsWith("#")
+                && url.startsWith(site.getSiteUrl())
+                && !site.getSiteUrl().equals(url)
+                && !path.equals("/")
+                && !IndexingServiceImpl.pageList.stream().map(Page::getPath).collect(Collectors.toList()).contains(path)
+                && !pageService.existPageByPath(path);
     }
 
     private static synchronized void sleepBeforeConnect(){
@@ -79,12 +71,13 @@ public class SiteParser extends RecursiveAction {
                 String href = element.attr("abs:href");
                 synchronized (SiteParser.class) {
                     if (checkLink(href)) {
+                        int statusCode = Jsoup.connect(href).ignoreHttpErrors(true).execute().statusCode();
                         //
                         System.out.println(href);
                         //
                         SiteParser task = new SiteParser(href, site, pageService, siteService);
                         task.fork();
-                        IndexingServiceImpl.pageList.add(new Page(site, path, 200, doc.html()));
+                        IndexingServiceImpl.pageList.add(new Page(site, path, statusCode, doc.html()));
                         if (IndexingServiceImpl.pageList.size() >= 100)
                             multiInsertPages(IndexingServiceImpl.pageList);
                     }
