@@ -4,6 +4,7 @@ import engine.dto.ApiResponse;
 import engine.models.Site;
 import engine.models.enums.SiteStatus;
 import engine.repositories.SiteRepository;
+import lombok.AllArgsConstructor;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -18,13 +19,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@AllArgsConstructor
 public class SiteServiceImpl implements SiteService{
 
     private final SiteRepository siteRepository;
-
-    public SiteServiceImpl(SiteRepository siteRepository) {
-        this.siteRepository = siteRepository;
-    }
 
     @Override
     public ApiResponse addCustom(String url) {
@@ -87,13 +85,11 @@ public class SiteServiceImpl implements SiteService{
         Optional<Site> siteOptional = findById(site.getId());
         if (siteOptional.isPresent()) {
             Site siteToPatch = siteOptional.get();
-            if (site.getLastError() != null && !siteToPatch.getLastError().equals(site.getLastError())) {
-                siteToPatch.setLastError(site.getLastError());
-            }
-            if (!siteToPatch.getStatus().equals(site.getStatus())) {
-                siteToPatch.setStatus(site.getStatus());
-            }
 
+            siteToPatch.setLastError(site.getLastError());
+            siteToPatch.setSiteName(site.getSiteName());
+            siteToPatch.setSiteUrl(site.getSiteUrl());
+            siteToPatch.setStatus(site.getStatus());
             siteToPatch.setStatusTime(LocalDateTime.now());
 
             siteRepository.save(siteToPatch);

@@ -1,7 +1,9 @@
 package engine.services;
 
+import engine.models.Lemma;
 import engine.models.Page;
 import engine.models.Site;
+import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -12,6 +14,7 @@ import java.util.*;
 import java.util.concurrent.RecursiveAction;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 public class SiteParser extends RecursiveAction {
 
     private final Site site;
@@ -20,27 +23,31 @@ public class SiteParser extends RecursiveAction {
 
     private final PageService pageService;
     private final SiteService siteService;
+    private final LemmaService lemmaService;
 
-    public SiteParser(String currentUrl, Site site, PageService pageService, SiteService siteService) {
-        this.currentUrl = currentUrl;
-        this.site = site;
-        this.pageService = pageService;
-        this.siteService = siteService;
-    }
+//    public SiteParser(String currentUrl, Site site, PageService pageService, SiteService siteService) {
+//        this.currentUrl = currentUrl;
+//        this.site = site;
+//        this.pageService = pageService;
+//        this.siteService = siteService;
+//    }
 
     private synchronized boolean checkLink(String url){
         path = site.getSiteUrl().endsWith("/") ?
                 url.replace(site.getSiteUrl(), "/") :
                 url.replace(site.getSiteUrl(), "");
 
-        return !url.substring(url.lastIndexOf("/")).contains("#")
-                && !url.substring(url.lastIndexOf("/")).contains("?")
-                && !url.substring(url.lastIndexOf("/")).contains("&")
-                && !path.endsWith(".pdf")
-                && !url.endsWith("#")
-                && url.startsWith(site.getSiteUrl())
+        return url.startsWith(site.getSiteUrl())
                 && !site.getSiteUrl().equals(url)
                 && !path.equals("/")
+                && !path.endsWith("#")
+                && !path.endsWith(".pdf")
+                //
+                && !path.contains("sort")
+                //
+                && !path.substring(path.lastIndexOf("/")).contains("#")
+                && !path.substring(path.lastIndexOf("/")).contains("?")
+                && !path.substring(path.lastIndexOf("/")).contains("&")
                 && !IndexingServiceImpl.pageList.stream().map(Page::getPath).collect(Collectors.toList()).contains(path)
                 && !pageService.existPageByPath(path);
     }
@@ -75,24 +82,33 @@ public class SiteParser extends RecursiveAction {
                         //
                         System.out.println(href);
                         //
-                        SiteParser task = new SiteParser(href, site, pageService, siteService);
-                        task.fork();
                         IndexingServiceImpl.pageList.add(new Page(site, path, statusCode, doc.html()));
+
                         if (IndexingServiceImpl.pageList.size() >= 100)
-                            multiInsertPages(IndexingServiceImpl.pageList);
+                            multiInsertPages();
+
+                        SiteParser task = new SiteParser(site, href, pageService, siteService, lemmaService);
+                        task.fork();
                     }
                 }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        sleepBeforeConnect();
     }
 
-    private void multiInsertPages(List<Page> pageList){
-        pageService.addAll(pageList);
+    private void multiInsertPages(){
+        List<Page> pagesForLemmas = pageService.addAll(IndexingServiceImpl.pageList);
+
+        for (Page page : pagesForLemmas){
+            lemmaService.addLemmas(page);
+        }
+
         IndexingServiceImpl.pageList.clear();
         siteService.patch(site);
+
+        //
         System.out.println("added new 100 pages");
+        //
     }
 }

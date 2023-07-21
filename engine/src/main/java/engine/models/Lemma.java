@@ -3,15 +3,22 @@ package engine.models;
 import lombok.*;
 
 import javax.persistence.*;
+import java.io.Serializable;
 
 @Entity
-@Table(name = "lemma")
+@Table(name = "lemma", uniqueConstraints = {@UniqueConstraint(name = "UNIQUE_LEMMA", columnNames = {"site_id", "lemma"})})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
 public class Lemma {
+
+    public Lemma(Site site, String lemma, int frequency) {
+        this.site = site;
+        this.lemma = lemma;
+        this.frequency = frequency;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,5 +39,4 @@ public class Lemma {
 
     @Column(name = "frequency")
     private int frequency;
-
 }

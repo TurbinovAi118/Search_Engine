@@ -3,6 +3,7 @@ package engine.services;
 import engine.config.SiteConfig;
 import engine.config.SitesConfigList;
 
+import engine.models.Page;
 import engine.models.Site;
 import engine.models.enums.SiteStatus;
 import lombok.RequiredArgsConstructor;
@@ -10,12 +11,14 @@ import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
-public class IndexRunnable implements Runnable {
+public class SiteIndexer implements Runnable {
 
     private final SiteService siteService;
     private final PageService pageService;
+    private final LemmaService lemmaService;
     private final SitesConfigList sites;
     public static ForkJoinPool pool;
 
@@ -34,21 +37,41 @@ public class IndexRunnable implements Runnable {
                     site.setStatus(SiteStatus.INDEXING);
                     siteService.patch(site);
                 }
-                SiteParser parser = new SiteParser(site.getSiteUrl(), site, pageService, siteService);
+                SiteParser parser = new SiteParser(site, site.getSiteUrl(), pageService, siteService, lemmaService);
                 pool = new ForkJoinPool();
 
                 pool.invoke(parser);
+//                pool.shutdown();
 
-                System.out.println(IndexingServiceImpl.pageList);
-                if (IndexingServiceImpl.pageList.size() > 0) {
-                    pageService.addAll(IndexingServiceImpl.pageList);
-                }
+                IndexingServiceImpl.awaitPoolTermination(pool);
 
-                IndexingServiceImpl.pageList.clear();
                 if (!IndexingServiceImpl.futureIndexer.isCancelled()) {
+
+                    pool.shutdown();
+
+                    System.out.println(IndexingServiceImpl.pageList);
+
+
+                    if (IndexingServiceImpl.pageList.size() > 0) {
+
+                        List<Page> pagesForLemmas = pageService.addAll(IndexingServiceImpl.pageList);
+
+                        for (Page page : pagesForLemmas){
+                            lemmaService.addLemmas(page);
+                        }
+
+                        IndexingServiceImpl.pageList.clear();
+
+                    }
+
                     site.setStatus(SiteStatus.INDEXED);
                     siteService.patch(site);
-                    System.out.println(site.getSiteName() + "indexed");
+
+
+                    System.out.println(site.getSiteName() + " indexed");
+
+
+                    IndexingServiceImpl.isIndexing = false;
                 }
             }
         }

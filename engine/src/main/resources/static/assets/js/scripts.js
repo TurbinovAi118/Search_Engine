@@ -1742,7 +1742,7 @@
 
                             switch ($this.data('send')) {
                                 case 'indexPage':
-                                    var $page = $this.closest('.form').find('input[name="site"]');
+                                    var $page = $this.closest('.form').find('input[name="page"]');
                                     data = {url: $page.val()};
                                     break;
                                 case 'search':

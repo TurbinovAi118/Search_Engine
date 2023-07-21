@@ -13,6 +13,12 @@ import javax.persistence.*;
 @ToString
 public class Index {
 
+    public Index(Page page, Lemma lemma, float rank) {
+        this.page = page;
+        this.lemma = lemma;
+        this.rank = rank;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")

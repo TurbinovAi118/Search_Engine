@@ -6,6 +6,7 @@ import engine.dto.statistics.DetailedStatisticsItem;
 import engine.dto.statistics.StatisticsData;
 import engine.dto.statistics.StatisticsResponse;
 import engine.dto.statistics.TotalStatistics;
+import engine.models.Lemma;
 import engine.models.Site;
 import engine.models.enums.SiteStatus;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class StatisticsServiceImpl implements StatisticsService{
 
     private final SiteService siteService;
     private final PageService pageService;
+    private final LemmaService lemmaService;
 
 
     @Override
@@ -35,13 +37,14 @@ public class StatisticsServiceImpl implements StatisticsService{
         List<DetailedStatisticsItem> detailed = new ArrayList<>();
         for(Site site : sitesList){
 
+            String url = site.getSiteUrl().endsWith("/") ? site.getSiteUrl().replaceFirst(".$","") :
+                    site.getSiteUrl();
+
             DetailedStatisticsItem item = new DetailedStatisticsItem();
             item.setName(site.getSiteName());
-            item.setUrl(site.getSiteUrl());
-            item.setPages(pageService.countPagesBySiteId(site.getId()));
-            //
-            item.setLemmas(0);
-            //
+            item.setUrl(url);
+            item.setPages(pageService.countPagesBySiteId(site));
+            item.setLemmas(lemmaService.countLemmasBySiteId(site));
             item.setError(site.getLastError());
             item.setStatusTime(site.getStatusTime());
             item.setStatus(site.getStatus());

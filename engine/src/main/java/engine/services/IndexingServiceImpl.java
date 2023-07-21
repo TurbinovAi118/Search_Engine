@@ -19,53 +19,65 @@ public class IndexingServiceImpl implements IndexingService{
 
     private final SiteService siteService;
     private final PageService pageService;
+    private final LemmaService lemmaService;
     private final SitesConfigList sites;
 
-    public static volatile RunnableFuture<Boolean> futureIndexer;
+    public static volatile RunnableFuture<String> futureIndexer;
 
     public static ExecutorService executor;
 
     public static boolean isIndexing = false;
 
-    public static List<Page> pageList = Collections.synchronizedList(new ArrayList<>());
+    public static volatile List<Page> pageList;
 
     @Override
     public ApiResponse startIndexing() {
         ApiResponse response = new ApiResponse();
+        pageList = Collections.synchronizedList(new ArrayList<>());
         if (isIndexing){
             response.setResult(false);
             response.setError("Индексация уже запущена");
             return response;
         }
         isIndexing = true;
-        executor = Executors.newFixedThreadPool(2);
-        futureIndexer = new FutureTask<>(new IndexRunnable(siteService, pageService, sites), true);
+        executor = Executors.newSingleThreadExecutor();
+        futureIndexer = new FutureTask<>(new SiteIndexer(siteService, pageService, lemmaService, sites), "");
         executor.submit(futureIndexer);
-
+        executor.shutdown();
 
         response.setResult(true);
         return response;
     }
 
     @Override
-    public ApiResponse stopIndexing() {
+    public ApiResponse stopIndexing(){
         ApiResponse response = new ApiResponse();
         if (isIndexing){
+            List<Site> sites = siteService.list();
 
             futureIndexer.cancel(true);
+
+            SiteIndexer.pool.shutdownNow();
+
+            awaitPoolTermination(SiteIndexer.pool);
 
             System.out.println(futureIndexer);
 
             if (pageList.size() > 0) {
-                pageService.addAll(pageList);
+                List<Page> pagesForLemmas = pageService.addAll(pageList);
+
+                for (Page page : pagesForLemmas){
+                    lemmaService.addLemmas(page);
+                }
+
                 pageList.clear();
             }
-            List<Site> sites = siteService.list();
             for (Site site : sites){
                 if (site.getStatus().equals(SiteStatus.INDEXING)) {
+                    site.setLastError("Индексация остановлена пользователем");
                     site.setStatus(SiteStatus.FAILED);
-                    site.setLastError("Индексанция остановлена пользователем");
                     siteService.patch(site);
+
                 }
             }
 
@@ -77,6 +89,14 @@ public class IndexingServiceImpl implements IndexingService{
         response.setResult(false);
         response.setError("Индексация не запущена/завершена");
         return response;
+    }
+
+    public static void awaitPoolTermination(ForkJoinPool pool){
+        while (true){
+            if (pool.getActiveThreadCount() == 0){
+                break;
+            }
+        }
     }
 
 }

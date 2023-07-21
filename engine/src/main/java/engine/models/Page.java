@@ -1,10 +1,10 @@
 package engine.models;
 
-
 import lombok.*;
 
 import javax.persistence.*;
 import javax.persistence.Index;
+import java.io.Serializable;
 
 @Entity
 @Table(name = "page", indexes = @Index(name = "path_index", columnList = "path", unique = true))
@@ -12,12 +12,20 @@ import javax.persistence.Index;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+
 public class Page {
+
+    public Page(Site site, String path, int responseCode, String content) {
+        this.site = site;
+        this.path = path;
+        this.responseCode = responseCode;
+        this.content = content;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private int id;
+    private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
     @JoinColumn(name = "site_id",
@@ -34,15 +42,8 @@ public class Page {
     @Column(name = "code", nullable = false)
     private int responseCode;
 
-    @Column(name = "content", nullable = false, columnDefinition = "mediumtext")
+    @Column(name = "content", columnDefinition = "mediumtext")
     private String content;
-
-    public Page(Site site, String path, int responseCode, String content) {
-        this.site = site;
-        this.path = path;
-        this.responseCode = responseCode;
-        this.content = content;
-    }
 
     @Override
     public String toString() {
