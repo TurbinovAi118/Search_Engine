@@ -49,7 +49,6 @@ public class Page {
     public String toString() {
         return "Page{" +
                 "id=" + id +
-                ", site=" + site +
                 ", path='" + path + '\'' +
                 ", responseCode=" + responseCode +
                 '}';

@@ -63,7 +63,7 @@ public class LemmaServiceImpl implements LemmaService {
         if (lemmas != null) {
             for (String lemma : lemmas.keySet()) {
                 lemmaRepository.add(page.getSite().getId(), lemma);
-                Lemma indexLemma = lemmaRepository.findLemmaByLemmaAndSite(lemma, page.getSite());
+                Lemma indexLemma = lemmaRepository.findLemmaByLemmaAndSite(lemma, String.valueOf(page.getSite().getId()));
                 indexRepository.save(new Index(page, indexLemma, lemmas.get(lemma)));
             }
             System.out.println(page.getId() + " - " +  lemmas.size());
@@ -122,9 +122,15 @@ public class LemmaServiceImpl implements LemmaService {
     }
 
     @Override
+    public Lemma findLemmaByLemmaAndSite(String lemma, String siteId) {
+        return lemmaRepository.findLemmaByLemmaAndSite(lemma, siteId);
+    }
+
+    @Override
     public Integer findFrequencyByLemmaAndSite(String lemma, String siteId) {
         return lemmaRepository.findFrequencyByLemmaAndSite(lemma, siteId);
     }
+
 
 
 }

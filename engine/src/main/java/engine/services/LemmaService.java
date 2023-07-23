@@ -21,6 +21,8 @@ public interface LemmaService {
 
     List<Lemma> findLemmasBySite(Site site);
 
+    Lemma findLemmaByLemmaAndSite(String lemma, String siteId);
+
     Integer findFrequencyByLemmaAndSite(String lemma, String siteId);
 
 }

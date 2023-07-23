@@ -79,9 +79,11 @@ public class SiteParser extends RecursiveAction {
                 synchronized (SiteParser.class) {
                     if (checkLink(href)) {
                         int statusCode = Jsoup.connect(href).ignoreHttpErrors(true).execute().statusCode();
+
                         //
                         System.out.println(href);
                         //
+
                         IndexingServiceImpl.pageList.add(new Page(site, path, statusCode, doc.html()));
 
                         if (IndexingServiceImpl.pageList.size() >= 100)
@@ -93,6 +95,7 @@ public class SiteParser extends RecursiveAction {
                 }
             }
         } catch (IOException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
