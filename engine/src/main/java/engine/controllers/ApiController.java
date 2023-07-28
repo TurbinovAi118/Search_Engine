@@ -3,6 +3,7 @@ package engine.controllers;
 import engine.dto.ApiResponse;
 import engine.dto.statistics.StatisticsResponse;
 import engine.services.*;
+import jdk.swing.interop.SwingInterOpUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -46,6 +47,7 @@ public class ApiController {
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse> search(@RequestParam Map<String, String> body){
+        System.out.println(body);
         ApiResponse response = searchService.search(body);
         return response.isResult() ? ResponseEntity.status(200).body(response) : ResponseEntity.status(404).body(response);
     }

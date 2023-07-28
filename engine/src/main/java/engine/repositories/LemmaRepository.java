@@ -31,10 +31,10 @@ public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
 
     //ниже могут вылезать ошибки из-за количества возвращаемых значений
     @Query(value = "SELECT * FROM `lemma` WHERE lemma = :lemma AND site_id LIKE :siteId", nativeQuery = true)
-    Lemma findLemmaByLemmaAndSite(String lemma, String siteId);
+    List<Lemma> findLemmaByLemmaAndSite(String lemma, String siteId);
 
     @Query(value = "SELECT frequency FROM `lemma` WHERE lemma = :lemma AND site_id LIKE :siteId", nativeQuery = true)
-    Integer findFrequencyByLemmaAndSite(String lemma, String siteId);
+    List<Integer> findFrequencyByLemmaAndSite(String lemma, String siteId);
 
 
 

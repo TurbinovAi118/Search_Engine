@@ -65,11 +65,9 @@ public class IndexingServiceImpl implements IndexingService{
 
             if (pageList.size() > 0) {
                 List<Page> pagesForLemmas = pageService.addAll(pageList);
-
                 for (Page page : pagesForLemmas){
                     lemmaService.addLemmas(page);
                 }
-
                 pageList.clear();
             }
             for (Site site : sites){
@@ -77,7 +75,6 @@ public class IndexingServiceImpl implements IndexingService{
                     site.setLastError("Индексация остановлена пользователем");
                     site.setStatus(SiteStatus.FAILED);
                     siteService.patch(site);
-
                 }
             }
 

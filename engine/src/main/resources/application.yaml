@@ -1,7 +1,10 @@
 indexing-settings:
   sites:
-    - url: https://playback.ru/
-      name: PlayBack.Ru
+    - url: https://nikoartgallery.com/
+      name: Галлерея Нико
+    - url: https://nopaper.ru/
+      name: NoPaper
+
 
 spring:
   jpa:

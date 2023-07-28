@@ -39,41 +39,27 @@ public class SiteIndexer implements Runnable {
                 }
                 SiteParser parser = new SiteParser(site, site.getSiteUrl(), pageService, siteService, lemmaService);
                 pool = new ForkJoinPool();
-
                 pool.invoke(parser);
-//                pool.shutdown();
 
                 IndexingServiceImpl.awaitPoolTermination(pool);
 
                 if (!IndexingServiceImpl.futureIndexer.isCancelled()) {
-
                     pool.shutdown();
 
-                    System.out.println(IndexingServiceImpl.pageList);
-
-
                     if (IndexingServiceImpl.pageList.size() > 0) {
-
                         List<Page> pagesForLemmas = pageService.addAll(IndexingServiceImpl.pageList);
-
                         for (Page page : pagesForLemmas){
                             lemmaService.addLemmas(page);
                         }
-
                         IndexingServiceImpl.pageList.clear();
-
                     }
 
                     site.setStatus(SiteStatus.INDEXED);
                     siteService.patch(site);
-
-
                     System.out.println(site.getSiteName() + " indexed");
-
-
-                    IndexingServiceImpl.isIndexing = false;
                 }
             }
+            IndexingServiceImpl.isIndexing = false;
         }
     }
 }

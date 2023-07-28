@@ -41,15 +41,32 @@ public class SiteParser extends RecursiveAction {
                 && !site.getSiteUrl().equals(url)
                 && !path.equals("/")
                 && !path.endsWith("#")
-                && !path.endsWith(".pdf")
+                && checkType(path)
                 //
-                && !path.contains("sort")
+//                && !path.contains("sort")
                 //
+                && !path.contains("?")
+                && !path.contains("&")
                 && !path.substring(path.lastIndexOf("/")).contains("#")
-                && !path.substring(path.lastIndexOf("/")).contains("?")
-                && !path.substring(path.lastIndexOf("/")).contains("&")
                 && !IndexingServiceImpl.pageList.stream().map(Page::getPath).collect(Collectors.toList()).contains(path)
                 && !pageService.existPageByPath(path);
+    }
+
+    private boolean checkType (String url){
+        return !url.toLowerCase(Locale.ROOT)
+                .contains(".jpg")
+                && !url.contains(".jpeg")
+                && !url.contains(".png")
+                && !url.contains(".gif")
+                && !url.contains(".webp")
+                && !url.contains(".pdf")
+                && !url.contains(".eps")
+                && !url.contains(".xlsx")
+                && !url.contains(".doc")
+                && !url.contains(".docx")
+                && !url.contains(".pptx")
+                && !url.contains(".mp3")
+                && !url.contains(".mp4");
     }
 
     private static synchronized void sleepBeforeConnect(){
@@ -82,9 +99,14 @@ public class SiteParser extends RecursiveAction {
 
                         //
                         System.out.println(href);
-                        //
 
-                        IndexingServiceImpl.pageList.add(new Page(site, path, statusCode, doc.html()));
+                        String content = Jsoup.connect(href).userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                                "AppleWebKit/537.36 (KHTML, like Gecko) " +
+                                "Chrome/110.0.0.0 YaBrowser/23.3.4.603 Yowser/2.5 Safari/537.36")
+                                .referrer("https://www.google.com")
+                                .get().html();
+
+                        IndexingServiceImpl.pageList.add(new Page(site, path, statusCode, content));
 
                         if (IndexingServiceImpl.pageList.size() >= 100)
                             multiInsertPages();

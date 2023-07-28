@@ -1,11 +1,14 @@
 package engine.services;
 
+import engine.dto.ApiData;
 import engine.dto.ApiResponse;
 import engine.models.Lemma;
 import engine.models.Page;
 import engine.models.Site;
 import engine.repositories.IndexRepository;
 import lombok.AllArgsConstructor;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -24,9 +27,12 @@ public class SearchServiceImpl implements SearchService{
     public ApiResponse search(Map<String, String> body) {
         ApiResponse response = new ApiResponse();
 
+        int limit = Integer.parseInt(body.get("limit"));
+        String query = body.get("query");
+
         Map<String, Integer> queryLemmas = new HashMap<>();
         try {
-            queryLemmas = lemmaService.parseLemmas(body.get("query"), true);
+            queryLemmas = lemmaService.parseLemmas(query, true);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -47,8 +53,7 @@ public class SearchServiceImpl implements SearchService{
 
         System.out.println("изначальный запрос " + queryLemmas);
 
-        queryLemmas.keySet().removeIf(searchLemma -> lemmaService.findFrequencyByLemmaAndSite(
-                searchLemma, site != null ? String.valueOf(site.getId()) : "%") == null);
+        queryLemmas.values().removeIf(value -> value == 0);
 
         System.out.println("поиск по существующим леммам " + queryLemmas);
 
@@ -67,30 +72,37 @@ public class SearchServiceImpl implements SearchService{
 
         System.out.println("Леммы, отсортированные по количеству упоминаний" + sortedQueryLemmas);
 
+        if (sortedQueryLemmas.size() == 0){
+            response.setResult(false);
+            response.setError("По данному запросу не найдено результатов");
+            return response;
+        }
+
         String firstLemma = sortedQueryLemmas.keySet().stream().findFirst().get();
         sortedQueryLemmas.remove(firstLemma);
 
-        int firstLemmaId = lemmaService.findLemmaByLemmaAndSite(firstLemma, site != null ? String.valueOf(site.getId()) : "%").getId();
+        List<Lemma> firstLemmas = lemmaService.findLemmaByLemmaAndSite(firstLemma, site != null ? String.valueOf(site.getId()) : "%");
         Map<Page, Float> foundPages = new HashMap<>();
-        for (Page page : findPagesByLemmas(firstLemmaId)){
-            foundPages.put(page, 0F);
-        }
+        firstLemmas.forEach(lemma -> {
+                    for (Page page : findPagesByLemmas(lemma.getId())) {
+                        foundPages.put(page, indexRepository.findByLemmaAndPage(lemma, page).getRank());
+                    }
+                });
+
 
         //купить смартфон гарнитур стекло царапина гб
 
-        System.out.println(foundPages);
-
         sortedQueryLemmas.keySet().forEach(queryLemma -> {
-            Lemma lemma = lemmaService.findLemmaByLemmaAndSite(queryLemma, site != null ? String.valueOf(site.getId()) : "%");
-            foundPages.keySet().forEach(page -> {
-                if (indexRepository.existsByPageAndLemma(page, lemma)) {
-                    foundPages.put(page, foundPages.get(page) + indexRepository.findByLemmaAndPage(lemma, page).getRank());
-                }
-            });
-            foundPages.keySet().removeIf(page -> !indexRepository.existsByPageAndLemma(page, lemma));
+            List<Lemma> lemmas = lemmaService.findLemmaByLemmaAndSite(queryLemma, site != null ? String.valueOf(site.getId()) : "%");
+            for (Lemma lemma : lemmas) {
+                foundPages.keySet().forEach(page -> {
+                    if (indexRepository.existsByPageAndLemma(page, lemma)) {
+                        foundPages.put(page, foundPages.get(page) + indexRepository.findByLemmaAndPage(lemma, page).getRank());
+                    }
+                });
+                foundPages.keySet().removeIf(page -> !indexRepository.existsByPageAndLemma(page, lemma));
+            }
         });
-
-        System.out.println(foundPages);
 
         if (foundPages.size() == 0){
             response.setResult(false);
@@ -98,10 +110,45 @@ public class SearchServiceImpl implements SearchService{
             return response;
         }
 
+        float maxRelevancy = foundPages.values().stream().max(Float::compare).get();
 
+        Map<Page, Float> sortedFoundPages =
+                foundPages.entrySet().stream()
+                        .sorted(Map.Entry.comparingByValue())
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
-        response.setResult(false);
-        response.setError("Неизвестная ошибка.");
+        List<ApiData> data = new ArrayList<>();
+        for (Page page : sortedFoundPages.keySet()){
+            ApiData pageData = new ApiData();
+
+            String url = page.getSite().getSiteUrl().endsWith("/") ? page.getSite().getSiteUrl().replaceFirst(".$","") :
+                    page.getSite().getSiteUrl();
+
+            Document doc = Jsoup.parse(page.getContent());
+
+            String title = doc.select("title").text();
+
+            pageData.setSite(url);
+            pageData.setSiteName(page.getSite().getSiteName());
+            pageData.setUri(page.getPath());
+
+            pageData.setTitle(title);
+            pageData.setSnippet("EMPTY_SNIPPET");
+            pageData.setRelevance(sortedFoundPages.get(page) / maxRelevancy);
+            data.add(pageData);
+            if (data.size() == limit)
+                break;
+        }
+
+        if (foundPages.size() == 0){
+            response.setResult(false);
+            response.setError("По данному запросу не найдено результатов");
+            return response;
+        }
+
+        response.setResult(true);
+        response.setData(data);
         return response;
     }
 

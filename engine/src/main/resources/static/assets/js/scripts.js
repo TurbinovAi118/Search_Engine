@@ -1540,7 +1540,8 @@
                             if (data.offset === 0) {
                                 $content.empty();
                             }
-                            $searchResults.find('.SearchResult-amount').text(result.count);
+                            console.log(result.data.length)
+                            $searchResults.find('.SearchResult-amount').text(result.data.length);
                             var scroll = $(window).scrollTop();
                             result.data.forEach(function(page){
                                 $content.append('<div class="SearchResult-block">' +
