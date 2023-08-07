@@ -61,7 +61,7 @@ public class IndexingServiceImpl implements IndexingService{
 
             awaitPoolTermination(SiteIndexer.pool);
 
-            System.out.println(futureIndexer);
+//            System.out.println(futureIndexer);
 
             if (pageList.size() > 0) {
                 List<Page> pagesForLemmas = pageService.addAll(pageList);

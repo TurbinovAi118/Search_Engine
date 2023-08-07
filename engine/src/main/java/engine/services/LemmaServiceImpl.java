@@ -69,7 +69,7 @@ public class LemmaServiceImpl implements LemmaService {
                 }
 //                indexLemmas.forEach(indexLemma -> indexRepository.save(new Index(page, indexLemma, lemmas.get(lemma))));
             }
-            System.out.println(page.getId() + " - " +  lemmas.size());
+//            System.out.println(page.getId() + " - " +  lemmas.size());
         }
     }
 
@@ -110,6 +110,11 @@ public class LemmaServiceImpl implements LemmaService {
     }
 
     @Override
+    public List<String> getNormalForms(String word){
+        return luceneMorph.getNormalForms(word);
+    };
+
+    @Override
     public Integer countLemmasBySiteId(Site site) {
         return lemmaRepository.countAllBySite(site);
     }
@@ -133,7 +138,5 @@ public class LemmaServiceImpl implements LemmaService {
     public Integer findFrequencyByLemmaAndSite(String lemma, String siteId) {
         return lemmaRepository.findFrequencyByLemmaAndSite(lemma, siteId).stream().findFirst().orElse(0);
     }
-
-
 
 }

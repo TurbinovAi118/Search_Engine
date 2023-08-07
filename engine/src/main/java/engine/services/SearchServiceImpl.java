@@ -9,6 +9,7 @@ import engine.repositories.IndexRepository;
 import lombok.AllArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -28,7 +29,7 @@ public class SearchServiceImpl implements SearchService{
         ApiResponse response = new ApiResponse();
 
         int limit = Integer.parseInt(body.get("limit"));
-        String query = body.get("query");
+        String query = body.get("query").toLowerCase(Locale.ROOT);
 
         Map<String, Integer> queryLemmas = new HashMap<>();
         try {
@@ -50,18 +51,19 @@ public class SearchServiceImpl implements SearchService{
 
         Integer lemmasAmount = lemmaService.countAllLemmas();
         double frequencyLimit = lemmasAmount * 0.005;
+//        double frequencyLimit = lemmasAmount / (lemmasAmount * 0.2);
 
-        System.out.println("изначальный запрос " + queryLemmas);
+//        System.out.println("изначальный запрос " + queryLemmas);
 
         queryLemmas.values().removeIf(value -> value == 0);
 
-        System.out.println("поиск по существующим леммам " + queryLemmas);
+//        System.out.println("поиск по существующим леммам " + queryLemmas);
 
         queryLemmas.keySet().removeIf(searchLemma ->
             (double) (lemmasAmount / lemmaService.findFrequencyByLemmaAndSite(
                 searchLemma, site != null ? String.valueOf(site.getId()) : "%")) < frequencyLimit);
 
-        System.out.println("поиск без учета лемм, встречающихся на большом кол-ве страниц" + queryLemmas);
+//        System.out.println("поиск без учета лемм, встречающихся на большом кол-ве страниц" + queryLemmas);
 
         Map<String, Integer> sortedQueryLemmas =
                 queryLemmas.entrySet().stream()
@@ -70,7 +72,21 @@ public class SearchServiceImpl implements SearchService{
                                 Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
 
-        System.out.println("Леммы, отсортированные по количеству упоминаний" + sortedQueryLemmas);
+        String[] queryList = query.split(" ");
+        List<String> queryWordsToLemmas = new ArrayList<>();
+        for (String queryWord : queryList){
+            List<String> lemmasInQuery = new ArrayList<>();
+            lemmaService.getNormalForms(queryWord).forEach(word -> {
+                if (sortedQueryLemmas.containsKey(word))
+                    lemmasInQuery.add(word);
+            });
+            if (lemmasInQuery.size() > 0)
+                queryWordsToLemmas.add(queryWord);
+        }
+
+//        System.out.println("words to search: " + queryWordsToLemmas);
+
+//        System.out.println("Леммы, отсортированные по количеству упоминаний" + sortedQueryLemmas);
 
         if (sortedQueryLemmas.size() == 0){
             response.setResult(false);
@@ -114,7 +130,7 @@ public class SearchServiceImpl implements SearchService{
 
         Map<Page, Float> sortedFoundPages =
                 foundPages.entrySet().stream()
-                        .sorted(Map.Entry.comparingByValue())
+                        .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                         .collect(Collectors.toMap(
                                 Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
@@ -129,12 +145,34 @@ public class SearchServiceImpl implements SearchService{
 
             String title = doc.select("title").text();
 
+            List<String> snippetList = new ArrayList<>();
+
+            for (String word : queryWordsToLemmas){
+                Elements foundElements = doc.body().getElementsContainingOwnText(word);
+                if (foundElements.size() > 0) {
+                    String snippet = foundElements.first().text();
+                    int wordStartIndex = snippet.toLowerCase(Locale.ROOT).indexOf(word);
+                    snippet = snippet.replace(snippet.substring(wordStartIndex, wordStartIndex+word.length()),
+                            "<b>" +snippet.substring(wordStartIndex, wordStartIndex+word.length()) + "</b>");
+                    snippetList.add(snippet);
+                }
+            }
+
+//            System.out.println(snippetList);
+
+            StringJoiner joiner = new StringJoiner("<br>");
+            for (String snippet : snippetList){
+                joiner.add(snippet);
+            }
+//            System.out.println(joiner);
+
+
             pageData.setSite(url);
             pageData.setSiteName(page.getSite().getSiteName());
             pageData.setUri(page.getPath());
 
             pageData.setTitle(title);
-            pageData.setSnippet("EMPTY_SNIPPET");
+            pageData.setSnippet(joiner.toString());
             pageData.setRelevance(sortedFoundPages.get(page) / maxRelevancy);
             data.add(pageData);
             if (data.size() == limit)

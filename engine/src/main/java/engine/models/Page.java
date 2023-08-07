@@ -42,7 +42,7 @@ public class Page {
     @Column(name = "code", nullable = false)
     private int responseCode;
 
-    @Column(name = "content", columnDefinition = "mediumtext")
+    @Column(name = "content", columnDefinition = "mediumtext", nullable = false)
     private String content;
 
     @Override

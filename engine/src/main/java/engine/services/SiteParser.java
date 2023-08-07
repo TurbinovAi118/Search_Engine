@@ -25,13 +25,6 @@ public class SiteParser extends RecursiveAction {
     private final SiteService siteService;
     private final LemmaService lemmaService;
 
-//    public SiteParser(String currentUrl, Site site, PageService pageService, SiteService siteService) {
-//        this.currentUrl = currentUrl;
-//        this.site = site;
-//        this.pageService = pageService;
-//        this.siteService = siteService;
-//    }
-
     private synchronized boolean checkLink(String url){
         path = site.getSiteUrl().endsWith("/") ?
                 url.replace(site.getSiteUrl(), "/") :
@@ -97,22 +90,23 @@ public class SiteParser extends RecursiveAction {
                     if (checkLink(href)) {
                         int statusCode = Jsoup.connect(href).ignoreHttpErrors(true).execute().statusCode();
 
-                        //
-                        System.out.println(href);
+//                        System.out.println(href);
 
-                        String content = Jsoup.connect(href).userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+                        String content = (statusCode == 200) ? Jsoup.connect(href).userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                                 "AppleWebKit/537.36 (KHTML, like Gecko) " +
                                 "Chrome/110.0.0.0 YaBrowser/23.3.4.603 Yowser/2.5 Safari/537.36")
                                 .referrer("https://www.google.com")
-                                .get().html();
+                                .get().html() : "";
 
                         IndexingServiceImpl.pageList.add(new Page(site, path, statusCode, content));
 
                         if (IndexingServiceImpl.pageList.size() >= 100)
                             multiInsertPages();
 
-                        SiteParser task = new SiteParser(site, href, pageService, siteService, lemmaService);
-                        task.fork();
+                        if (statusCode == 200) {
+                            SiteParser task = new SiteParser(site, href, pageService, siteService, lemmaService);
+                            task.fork();
+                        }
                     }
                 }
             }
@@ -133,7 +127,7 @@ public class SiteParser extends RecursiveAction {
         siteService.patch(site);
 
         //
-        System.out.println("added new 100 pages");
+//        System.out.println("added new 100 pages");
         //
     }
 }
