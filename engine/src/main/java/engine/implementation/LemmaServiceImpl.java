@@ -1,4 +1,4 @@
-package engine.services;
+package engine.implementation;
 
 import engine.models.Index;
 import engine.models.Lemma;
@@ -6,7 +6,7 @@ import engine.models.Page;
 import engine.models.Site;
 import engine.repositories.IndexRepository;
 import engine.repositories.LemmaRepository;
-import lombok.AllArgsConstructor;
+import engine.services.LemmaService;
 import lombok.RequiredArgsConstructor;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
@@ -14,7 +14,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
 
-import javax.print.Doc;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,7 +24,6 @@ public class LemmaServiceImpl implements LemmaService {
 
     private final LemmaRepository lemmaRepository;
     private final IndexRepository indexRepository;
-//    private final PageService pageService;
 
     private LuceneMorphology luceneMorph;
     {
@@ -48,11 +46,7 @@ public class LemmaServiceImpl implements LemmaService {
             String url = siteUrl + page.getPath();
 
             try {
-                Document doc = Jsoup.connect(url).userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                        "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                        "Chrome/110.0.0.0 YaBrowser/23.3.4.603 Yowser/2.5 Safari/537.36")
-                        .referrer("https://www.google.com")
-                        .get();
+                Document doc = new SiteConnector(url).getDoc();
                 lemmas = parseLemmas(doc.html(), false);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -67,9 +61,7 @@ public class LemmaServiceImpl implements LemmaService {
                 for (Lemma indexLemma : indexLemmas){
                     indexRepository.save(new Index(page, indexLemma, lemmas.get(lemma)));
                 }
-//                indexLemmas.forEach(indexLemma -> indexRepository.save(new Index(page, indexLemma, lemmas.get(lemma))));
             }
-//            System.out.println(page.getId() + " - " +  lemmas.size());
         }
     }
 
@@ -97,7 +89,6 @@ public class LemmaServiceImpl implements LemmaService {
                 .filter(wordInfo -> !wordInfo.contains("ПРЕДЛ") && !wordInfo.contains("СОЮЗ")
                         && !wordInfo.contains("ЧАСТ") && !wordInfo.contains("МЕЖД"))
                 .map(wordInfo ->wordInfo.split("\\|")[0])
-                        //wordInfo.replace(wordInfo.substring(wordInfo.lastIndexOf("|")), "")
                 .collect(Collectors.toList());
 
         List<String> uniqueLemmas = sortedLemmas.stream().distinct().collect(Collectors.toList());

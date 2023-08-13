@@ -12,13 +12,11 @@ import java.util.Optional;
 @Repository
 public interface PageRepository extends CrudRepository<Page, Integer> {
 
-    @Query(value = "select * from page where page.site_id = ?1", nativeQuery = true)
-    List<Page> getPageBySiteId(int id);
+    List<Page> findPagesBySiteId(int siteId);
 
     Integer countAllBySite(Site site);
 
-    @Query(value = "select * from page where `path` = ?1 ", nativeQuery = true)
-    Optional<Page> getPageByPath(String path);
+    Optional<Page> findPageByPath(String path);
 
     Boolean existsByPath(String path);
 

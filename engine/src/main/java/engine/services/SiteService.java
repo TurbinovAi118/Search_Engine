@@ -8,8 +8,6 @@ import java.util.Optional;
 
 public interface SiteService {
 
-    ApiResponse addCustom(String url);
-
     ApiResponse add(Site site);
 
     Optional<Site> findById(int id);

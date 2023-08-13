@@ -14,4 +14,8 @@ import java.util.List;
 @ConfigurationProperties(prefix = "indexing-settings")
 public class SitesConfigList {
     List<SiteConfig> sites;
+
+    public SiteConfig findSiteByURL(String url){
+        return sites.stream().filter(sites -> sites.getUrl().equals(url)).findFirst().get();
+    }
 }

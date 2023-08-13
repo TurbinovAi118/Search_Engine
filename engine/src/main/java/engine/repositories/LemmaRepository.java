@@ -25,8 +25,6 @@ public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
     @Query(value = "SELECT COUNT(*) from `lemma`", nativeQuery = true)
     Integer countAllLemmas();
 
-//    Lemma findLemmaByLemmaAndSite(String lemma, Site site);
-
     List<Lemma> findLemmaBySite(Site site);
 
     //ниже могут вылезать ошибки из-за количества возвращаемых значений

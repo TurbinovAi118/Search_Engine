@@ -1,4 +1,4 @@
-package engine.services;
+package engine.implementation;
 
 import engine.config.SiteConfig;
 import engine.config.SitesConfigList;
@@ -6,12 +6,14 @@ import engine.config.SitesConfigList;
 import engine.models.Page;
 import engine.models.Site;
 import engine.models.enums.SiteStatus;
+import engine.services.LemmaService;
+import engine.services.PageService;
+import engine.services.SiteService;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 public class SiteIndexer implements Runnable {

@@ -1,4 +1,4 @@
-package engine.services;
+package engine.implementation;
 
 import engine.dto.ApiData;
 import engine.dto.ApiResponse;
@@ -6,6 +6,10 @@ import engine.models.Lemma;
 import engine.models.Page;
 import engine.models.Site;
 import engine.repositories.IndexRepository;
+import engine.services.LemmaService;
+import engine.services.PageService;
+import engine.services.SearchService;
+import engine.services.SiteService;
 import lombok.AllArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -17,7 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
-public class SearchServiceImpl implements SearchService{
+public class SearchServiceImpl implements SearchService {
 
     private final LemmaService lemmaService;
     private final SiteService siteService;

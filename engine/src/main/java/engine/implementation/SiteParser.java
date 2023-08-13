@@ -1,8 +1,10 @@
-package engine.services;
+package engine.implementation;
 
-import engine.models.Lemma;
 import engine.models.Page;
 import engine.models.Site;
+import engine.services.LemmaService;
+import engine.services.PageService;
+import engine.services.SiteService;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -72,14 +74,10 @@ public class SiteParser extends RecursiveAction {
 
     @Override
     protected void compute() {
-        Document doc;
         try {
             sleepBeforeConnect();
-            doc = Jsoup.connect(currentUrl).userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                    "Chrome/110.0.0.0 YaBrowser/23.3.4.603 Yowser/2.5 Safari/537.36")
-                    .referrer("https://www.google.com")
-                    .get();
+            Document doc = new SiteConnector(currentUrl).getDoc();
+
             Elements docElements = doc.select("a");
             for (Element element : docElements){
                 if (IndexingServiceImpl.futureIndexer.isCancelled()){
@@ -90,13 +88,8 @@ public class SiteParser extends RecursiveAction {
                     if (checkLink(href)) {
                         int statusCode = Jsoup.connect(href).ignoreHttpErrors(true).execute().statusCode();
 
-//                        System.out.println(href);
-
-                        String content = (statusCode == 200) ? Jsoup.connect(href).userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                                "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                                "Chrome/110.0.0.0 YaBrowser/23.3.4.603 Yowser/2.5 Safari/537.36")
-                                .referrer("https://www.google.com")
-                                .get().html() : "";
+                        String content = (statusCode == 200) ? new SiteConnector(href).getDoc()
+                                        .html() : "";
 
                         IndexingServiceImpl.pageList.add(new Page(site, path, statusCode, content));
 
@@ -125,9 +118,5 @@ public class SiteParser extends RecursiveAction {
 
         IndexingServiceImpl.pageList.clear();
         siteService.patch(site);
-
-        //
-//        System.out.println("added new 100 pages");
-        //
     }
 }

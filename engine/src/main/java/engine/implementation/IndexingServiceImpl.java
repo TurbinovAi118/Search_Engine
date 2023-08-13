@@ -1,10 +1,11 @@
-package engine.services;
+package engine.implementation;
 
 import engine.config.SitesConfigList;
 import engine.dto.ApiResponse;
 import engine.models.Page;
 import engine.models.Site;
 import engine.models.enums.SiteStatus;
+import engine.services.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +16,7 @@ import java.util.concurrent.*;
 
 @Service
 @RequiredArgsConstructor
-public class IndexingServiceImpl implements IndexingService{
+public class IndexingServiceImpl implements IndexingService {
 
     private final SiteService siteService;
     private final PageService pageService;
@@ -60,8 +61,6 @@ public class IndexingServiceImpl implements IndexingService{
             SiteIndexer.pool.shutdownNow();
 
             awaitPoolTermination(SiteIndexer.pool);
-
-//            System.out.println(futureIndexer);
 
             if (pageList.size() > 0) {
                 List<Page> pagesForLemmas = pageService.addAll(pageList);

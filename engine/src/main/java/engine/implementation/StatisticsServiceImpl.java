@@ -1,26 +1,23 @@
-package engine.services;
+package engine.implementation;
 
-import engine.config.SiteConfig;
-import engine.config.SitesConfigList;
 import engine.dto.statistics.DetailedStatisticsItem;
 import engine.dto.statistics.StatisticsData;
 import engine.dto.statistics.StatisticsResponse;
 import engine.dto.statistics.TotalStatistics;
-import engine.models.Lemma;
 import engine.models.Site;
-import engine.models.enums.SiteStatus;
+import engine.services.LemmaService;
+import engine.services.PageService;
+import engine.services.SiteService;
+import engine.services.StatisticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class StatisticsServiceImpl implements StatisticsService{
+public class StatisticsServiceImpl implements StatisticsService {
 
     private final SiteService siteService;
     private final PageService pageService;

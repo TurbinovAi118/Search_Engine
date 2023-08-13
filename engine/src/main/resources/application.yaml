@@ -1,7 +1,7 @@
 indexing-settings:
   sites:
-    - url: https://nikoartgallery.com/
-      name: Галлерея Нико
+#    - url: https://nikoartgallery.com/
+#      name: Галлерея Нико
     - url: https://nopaper.ru/
       name: NoPaper
     - url: http://www.playback.ru/

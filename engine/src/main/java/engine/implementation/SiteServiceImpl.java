@@ -1,18 +1,15 @@
-package engine.services;
+package engine.implementation;
 
 import engine.dto.ApiResponse;
 import engine.models.Site;
 import engine.models.enums.SiteStatus;
 import engine.repositories.SiteRepository;
+import engine.services.SiteService;
 import lombok.AllArgsConstructor;
-import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,40 +17,9 @@ import java.util.Optional;
 
 @Service
 @AllArgsConstructor
-public class SiteServiceImpl implements SiteService{
+public class SiteServiceImpl implements SiteService {
 
     private final SiteRepository siteRepository;
-
-    @Override
-    public ApiResponse addCustom(String url) {
-        Document doc;
-        ApiResponse response = new ApiResponse();
-        if (url.isEmpty()){
-            response.setResult(false);
-            response.setError("Введите адресс");
-            return response;
-        }
-        try {
-            doc = Jsoup.connect(url).userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-                    "AppleWebKit/537.36 (KHTML, like Gecko) " +
-                    "Chrome/110.0.0.0 YaBrowser/23.3.4.603 Yowser/2.5 Safari/537.36").get();
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.setResult(false);
-            response.setError("Введен не верный адресс.");
-            return response;
-        }
-        if (existsBySiteUrl(url)){
-            response.setResult(false);
-            response.setError("Такой сайт уже присутствует в базе данных.");
-            return response;
-        }
-        String name = doc.select("head").select("title").text();
-        Site site = new Site(SiteStatus.NOT_INDEXED, LocalDateTime.now(), null, url, name);
-        siteRepository.save(site);
-        response.setResult(true);
-        return response;
-    }
 
     @Override
     public ApiResponse add(Site site) {
