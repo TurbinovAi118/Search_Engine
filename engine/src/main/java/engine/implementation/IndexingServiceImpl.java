@@ -62,13 +62,8 @@ public class IndexingServiceImpl implements IndexingService {
 
             awaitPoolTermination(SiteIndexer.pool);
 
-            if (pageList.size() > 0) {
-                List<Page> pagesForLemmas = pageService.addAll(pageList);
-                for (Page page : pagesForLemmas){
-                    lemmaService.addLemmas(page);
-                }
-                pageList.clear();
-            }
+            Executors.newSingleThreadExecutor().execute(() -> parseRemainingLemmas(pageList));
+
             for (Site site : sites){
                 if (site.getStatus().equals(SiteStatus.INDEXING)) {
                     site.setLastError("Индексация остановлена пользователем");
@@ -85,6 +80,16 @@ public class IndexingServiceImpl implements IndexingService {
         response.setResult(false);
         response.setError("Индексация не запущена/завершена");
         return response;
+    }
+
+    private void parseRemainingLemmas(List<Page> pageList){
+        if (pageList.size() > 0) {
+            List<Page> pagesForLemmas = pageService.addAll(pageList);
+            for (Page page : pagesForLemmas){
+                lemmaService.addLemmas(page);
+            }
+            pageList.clear();
+        }
     }
 
     public static void awaitPoolTermination(ForkJoinPool pool){

@@ -4,8 +4,8 @@ indexing-settings:
 #      name: Галлерея Нико
     - url: https://nopaper.ru/
       name: NoPaper
-    - url: http://www.playback.ru/
-      name: PlayBack
+#    - url: http://www.playback.ru/
+#      name: PlayBack
 
 
 spring:

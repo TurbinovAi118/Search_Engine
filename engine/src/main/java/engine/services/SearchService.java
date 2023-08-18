@@ -11,6 +11,4 @@ public interface SearchService {
 
     ApiResponse search(Map<String, String> body);
 
-    List<Page> findPagesByLemmas(int lemmaId);
-
 }

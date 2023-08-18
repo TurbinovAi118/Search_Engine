@@ -80,14 +80,17 @@ public class LemmaServiceImpl implements LemmaService {
 
         for (String word : text.split(" ")){
             if (word.isEmpty()){
-               continue;
+                continue;
             }
-            allLemmas.addAll(luceneMorph.getMorphInfo(word));
+            List<String> wordInfo = luceneMorph.getMorphInfo(word);
+            List<String> checkList = new ArrayList<>();
+            wordInfo.stream().map(info -> info.split(" ")).forEach(list -> checkList.addAll(List.of(list)));
+            if (!checkList.contains("ПРЕДЛ") && !checkList.contains("СОЮЗ") && !checkList.contains("ЧАСТ") && !checkList.contains("МЕЖД")) {
+                allLemmas.addAll(wordInfo);
+            }
         }
 
         List<String> sortedLemmas = allLemmas.stream()
-                .filter(wordInfo -> !wordInfo.contains("ПРЕДЛ") && !wordInfo.contains("СОЮЗ")
-                        && !wordInfo.contains("ЧАСТ") && !wordInfo.contains("МЕЖД"))
                 .map(wordInfo ->wordInfo.split("\\|")[0])
                 .collect(Collectors.toList());
 
@@ -103,7 +106,7 @@ public class LemmaServiceImpl implements LemmaService {
     @Override
     public List<String> getNormalForms(String word){
         return luceneMorph.getNormalForms(word);
-    };
+    }
 
     @Override
     public Integer countLemmasBySiteId(Site site) {

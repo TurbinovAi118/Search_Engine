@@ -58,7 +58,6 @@ public class SiteIndexer implements Runnable {
 
                     site.setStatus(SiteStatus.INDEXED);
                     siteService.patch(site);
-//                    System.out.println(site.getSiteName() + " indexed");
                 }
             }
             IndexingServiceImpl.isIndexing = false;
