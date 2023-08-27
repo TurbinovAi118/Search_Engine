@@ -1475,9 +1475,6 @@
                             }
                         }
                         shiftCheck($this);
-                        window.setTimeout(function(){
-                            API(send.statistics).init()
-                        }, 100);
                     }
                 },
                 stopIndexing: {
@@ -1496,9 +1493,6 @@
                             }
                         }
                         shiftCheck($this);
-                        window.setTimeout(function(){
-                            API(send.statistics).init()
-                        }, 100);
                     }
                 },
                 indexPage: {
@@ -1540,7 +1534,6 @@
                             if (data.offset === 0) {
                                 $content.empty();
                             }
-                            console.log(result.data.length)
                             $searchResults.find('.SearchResult-amount').text(result.data.length);
                             var scroll = $(window).scrollTop();
                             result.data.forEach(function(page){
@@ -1684,7 +1677,7 @@
                     $element.find('.btn-content').text($element.data('alttext'));
                     $element.data('alttext', text);
                 }
-                if ($element.data('send') === 'startIndexing' || $element.data('send') === 'stopIndexing'){
+                if ($element.data('send') == 'startIndexing' || $element.data('send') == 'stopIndexing'){
                     if (check) {
                         $('.UpdatePageBlock').show(0)
                     } else {
@@ -1697,12 +1690,12 @@
                     var altsend = $element.data('altsend');
                     $element.data('altsend', $element.data('send'));
                     $element.data('send', altsend);
-                }
+                };
                 if (check) {
                     $element.addClass('btn_check');
                 } else {
                     $element.removeClass('btn_check');
-                }
+                };
                 if (!wave) {
                     $element.trigger('changeCheck');
                 }

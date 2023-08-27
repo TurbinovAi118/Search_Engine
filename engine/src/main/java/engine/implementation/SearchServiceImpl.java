@@ -17,6 +17,7 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.function.DoubleToIntFunction;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,8 +41,6 @@ public class SearchServiceImpl implements SearchService {
 
         Map<String, Integer> sortedQueryLemmas = parseFilterAndSortQueryLemmas(query, site);
 
-        System.out.println(sortedQueryLemmas);
-
         if (sortedQueryLemmas == null || sortedQueryLemmas.size() == 0){
             response.setResult(false);
             response.setError("Задан неверный поисковый запрос.");
@@ -50,13 +49,19 @@ public class SearchServiceImpl implements SearchService {
 
         Map<Page, Float> sortedFoundPages = findAndSortResultPages(sortedQueryLemmas, site);
 
-        if (sortedFoundPages == null || sortedFoundPages.size() == 0){
+        if (sortedFoundPages == null){
             response.setResult(false);
             response.setError("По данному запросу не найдено результатов");
             return response;
         }
 
         List<ApiData> data = collectResponse(sortedFoundPages, limit, query, sortedQueryLemmas);
+
+        if (data.size() == 0){
+            response.setResult(false);
+            response.setError("По данному запросу не найдено результатов");
+            return response;
+        }
 
         response.setResult(true);
         response.setData(data);
@@ -195,7 +200,6 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private String parseSnippet(Map<String, Integer> queryLemmas, Document doc, String query){
-        String regex = "[^а-яА-Яa-zA-Z\s]";
         String maxRelevanceQueryWord = queryLemmas.entrySet().stream()
                 .min(Map.Entry.comparingByValue(Comparator.reverseOrder())).get().getKey();
 
@@ -209,45 +213,83 @@ public class SearchServiceImpl implements SearchService {
         else
             return null;
 
-        List<String> snippetArray = new ArrayList<>(getSnippetArray(query, elementText));
-        List<String> snippetLower = snippetArray.stream()
-                .map(word -> word = word.toLowerCase(Locale.ROOT).replaceAll(regex, ""))
-                .collect(Collectors.toList());
-
-        if (snippetLower.containsAll(Arrays.asList(query.toLowerCase(Locale.ROOT).split(" "))) && !snippetArray.isEmpty()){
-
-            for (String word : query.toLowerCase(Locale.ROOT).split(" ")){
-                snippetArray.set(snippetLower.indexOf(word), "<b>" + snippetArray.get(snippetLower.indexOf(word)) + "</b>");
-            }
-        } else {
-            snippetArray = new ArrayList<>(getSnippetArray(maxRelevanceQueryWord, elementText));
-            snippetLower = snippetArray.stream()
-                    .map(word -> word = word.toLowerCase(Locale.ROOT).replaceAll(regex, ""))
-                    .collect(Collectors.toList());
-            snippetArray.set(snippetLower.indexOf(maxRelevanceQueryWord), "<b>" + snippetArray.get(snippetLower.indexOf(maxRelevanceQueryWord)) + "</b>");
+        String snippet = markup(elementText, query);
+        if (snippet.isBlank()){
+            return null;
         }
 
-        String finalSnippet = "";
-        if (!snippetArray.isEmpty())
-            finalSnippet = (String.join(" ", snippetArray));
+        String finalSnippet = getSnippetArray(snippet);
 
         return "..." + finalSnippet + "...";
     }
 
-    private List<String> getSnippetArray(String query, String elementText) {
-        int indexOfCommon = elementText.toLowerCase(Locale.ROOT).indexOf(query.toLowerCase(Locale.ROOT));
-        if (indexOfCommon == -1){
-            return new ArrayList<>();
-        }
-        int indexOfFirstDot = elementText.substring(0, indexOfCommon).lastIndexOf(".");
-        int indexOfLastDot = elementText.substring(indexOfCommon).indexOf(".");
+    private  String markup(String text, String query){
+        String regex = "[^а-яА-Я\s]";
 
-        String startOfSnippet = elementText.substring(indexOfFirstDot == -1 ? 0 : indexOfFirstDot+1, indexOfCommon);
-        String endOfSnippet = elementText.substring(indexOfCommon, (indexOfLastDot == -1 ? elementText.length() : indexOfCommon + indexOfLastDot));
+        String[] textWords = text.split(" ");
+        List<String> queryWords = Arrays.asList(query.split(" "));
+
+        List<List<String>> textLemmas = new ArrayList<>();
+        List<List<String>> queryLemmas = new ArrayList<>();
+        List<String> textList = new ArrayList<>();
+
+        for(String word : textWords) {
+            textList.add(word);
+            try {
+                textLemmas.add(lemmaService.getNormalForms(word.replaceAll(regex, "").toLowerCase(Locale.ROOT)));
+            } catch (Exception e) {
+                textLemmas.add(new ArrayList<>());
+            }
+        }
+
+        queryWords.forEach(word -> queryLemmas.add(lemmaService.getNormalForms(word)));
+
+        StringJoiner queryLemmasJoiner = new StringJoiner(" ");
+        queryLemmas.forEach(list -> queryLemmasJoiner.add(String.join(" ", list)));
+
+        int firstWordIndex = textLemmas.indexOf(queryLemmas.get(0));
+        List<List<String>> textLemmasSub;
+        boolean forWhile = true;
+        if (firstWordIndex == -1)
+            return "";
+
+        while (forWhile){
+            textLemmasSub = textLemmas.subList(firstWordIndex, textLemmas.size());
+            StringJoiner textChecker = new StringJoiner(" ");
+            textLemmasSub.forEach(list -> textChecker.add(String.join(" ", list)));
+            if (textChecker.toString().startsWith(queryLemmasJoiner.toString()))
+                forWhile = false;
+            else {
+                textLemmasSub = textLemmas.subList(firstWordIndex + 1, textLemmas.size());
+                int common = (!textLemmasSub.contains(queryLemmas.get(0))) ? -1 : textLemmasSub.indexOf(queryLemmas.get(0));
+                firstWordIndex += (common == -1) ? -(firstWordIndex+1) : common + 1;
+            }
+            if (firstWordIndex == -1)
+                return "";
+        }
+        for (int i = 0; i < queryWords.size(); i++) {
+            textList.set(firstWordIndex+i, "<b>" + textList.get(firstWordIndex+i) + "</b>");
+        }
+
+        return String.join(" ", textList);
+    }
+
+
+    private static String getSnippetArray(String elementText) {
+        int indexOfCommon = elementText.toLowerCase(Locale.ROOT).indexOf("<b>");
+        int lastIndexOfCommon = elementText.toLowerCase(Locale.ROOT).lastIndexOf("</b>")+4;
+        if (indexOfCommon == -1){
+            return "";
+        }
+        int indexOfFirstComma = elementText.substring(0, indexOfCommon).lastIndexOf(",");
+        int indexOfLastComma = elementText.substring(lastIndexOfCommon).indexOf(",");
+
+        String startOfSnippet = elementText.substring(indexOfFirstComma == -1 ? 0 : indexOfFirstComma+1, lastIndexOfCommon);
+        String endOfSnippet = elementText.substring(lastIndexOfCommon, (indexOfLastComma == -1 ? elementText.length() : lastIndexOfCommon + indexOfLastComma));
         String text = startOfSnippet + endOfSnippet;
         text = text.trim();
 
-        return List.of(text.split(" "));
+        return text;
     }
 
     private List<Page> findPagesByLemmas(int lemmaId) {

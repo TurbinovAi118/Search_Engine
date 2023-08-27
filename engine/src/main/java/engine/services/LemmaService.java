@@ -27,4 +27,6 @@ public interface LemmaService {
 
     List<String> getNormalForms(String word);
 
+//    List<String> findAllInIdList(List<Integer> lemmasId);
+
 }

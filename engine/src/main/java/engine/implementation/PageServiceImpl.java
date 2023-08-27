@@ -3,7 +3,7 @@ package engine.implementation;
 import engine.config.SiteConfig;
 import engine.config.SitesConfigList;
 import engine.dto.ApiResponse;
-import engine.models.Page;;
+import engine.models.Page;
 import engine.models.Site;
 import engine.models.enums.SiteStatus;
 import engine.repositories.PageRepository;
@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
 
 @Service
 @AllArgsConstructor
@@ -80,11 +81,9 @@ public class PageServiceImpl  implements PageService {
     @Override
     public ApiResponse addSinglePage(String pageUrl) {
         ApiResponse response = new ApiResponse();
-        String siteURL = "";
-        for (SiteConfig site : sites.getSites()){
-            if (pageUrl.startsWith(site.getUrl()))
-                siteURL = site.getUrl();
-        }
+
+        String siteURL  = sites.getSites().stream().map(SiteConfig::getUrl)
+                .filter(pageUrl::startsWith).findFirst().orElse("");
 
         if (siteURL.isBlank()){
             response.setResult(false);
@@ -92,6 +91,13 @@ public class PageServiceImpl  implements PageService {
             return response;
         }
 
+        Executors.newSingleThreadExecutor().execute(() -> indexPage(siteURL, pageUrl));
+
+        response.setResult(true);
+        return response;
+    }
+
+    private void indexPage(String siteURL, String pageUrl){
         SiteConfig siteConfig = sites.findSiteByURL(siteURL);
 
         Site siteForPage;
@@ -116,8 +122,6 @@ public class PageServiceImpl  implements PageService {
         } catch (Exception e){
             e.printStackTrace();
         }
-        response.setResult(true);
-        return response;
     }
 
     @Override

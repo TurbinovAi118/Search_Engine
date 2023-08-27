@@ -27,6 +27,9 @@ public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
 
     List<Lemma> findLemmaBySite(Site site);
 
+//    @Query(value = "select lemma from lemma where id in :lemmasID", nativeQuery = true)
+//    List<String> findAllInIdList(List<Integer> lemmasID);
+
     //ниже могут вылезать ошибки из-за количества возвращаемых значений
     @Query(value = "SELECT * FROM `lemma` WHERE lemma = :lemma AND site_id LIKE :siteId", nativeQuery = true)
     List<Lemma> findLemmaByLemmaAndSite(String lemma, String siteId);

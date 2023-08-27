@@ -41,17 +41,7 @@ public class LemmaServiceImpl implements LemmaService {
         boolean invalid = String.valueOf(page.getResponseCode()).startsWith("4") || String.valueOf(page.getResponseCode()).startsWith("5");
 
         if (!invalid){
-            String siteUrl = page.getSite().getSiteUrl().endsWith("/") ?
-                    page.getSite().getSiteUrl().replaceFirst(".$","") : page.getSite().getSiteUrl();
-            String url = siteUrl + page.getPath();
-
-            try {
-                Document doc = new SiteConnector(url).getDoc();
-                lemmas = parseLemmas(doc.html(), false);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
+            lemmas = parseLemmas(page.getContent(), false);
         }
 
         if (lemmas != null) {
@@ -107,6 +97,11 @@ public class LemmaServiceImpl implements LemmaService {
     public List<String> getNormalForms(String word){
         return luceneMorph.getNormalForms(word);
     }
+//
+//    @Override
+//    public List<String> findAllInIdList(List<Integer> lemmasId) {
+//        return lemmaRepository.findAllInIdList(lemmasId);
+//    }
 
     @Override
     public Integer countLemmasBySiteId(Site site) {
@@ -132,5 +127,7 @@ public class LemmaServiceImpl implements LemmaService {
     public Integer findFrequencyByLemmaAndSite(String lemma, String siteId) {
         return lemmaRepository.findFrequencyByLemmaAndSite(lemma, siteId).stream().findFirst().orElse(0);
     }
+
+
 
 }
