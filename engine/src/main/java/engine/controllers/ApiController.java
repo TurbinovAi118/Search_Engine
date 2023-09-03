@@ -1,6 +1,7 @@
 package engine.controllers;
 
 import engine.dto.ApiResponse;
+import engine.dto.search.ApiSearchResponse;
 import engine.dto.statistics.StatisticsResponse;
 import engine.services.*;
 import jdk.swing.interop.SwingInterOpUtils;
@@ -46,8 +47,8 @@ public class ApiController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse> search(@RequestParam Map<String, String> body){
-        ApiResponse response = searchService.search(body);
+    public ResponseEntity<ApiSearchResponse> search(@RequestParam Map<String, String> body){
+        ApiSearchResponse response = searchService.search(body);
         return response.isResult() ? ResponseEntity.status(200).body(response) : ResponseEntity.status(404).body(response);
     }
 }

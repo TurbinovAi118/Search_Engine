@@ -1,7 +1,7 @@
 package engine.implementation;
 
-import engine.dto.ApiData;
-import engine.dto.ApiResponse;
+import engine.dto.search.ApiSearchResponse;
+import engine.dto.search.SearchData;
 import engine.models.Lemma;
 import engine.models.Page;
 import engine.models.Site;
@@ -17,7 +17,6 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.function.DoubleToIntFunction;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,8 +30,8 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
 
-    public ApiResponse search(Map<String, String> body) {
-        ApiResponse response = new ApiResponse();
+    public ApiSearchResponse search(Map<String, String> body) {
+        ApiSearchResponse response = new ApiSearchResponse();
 
         int limit = Integer.parseInt(body.get("limit"));
         String query = body.get("query").toLowerCase(Locale.ROOT);
@@ -55,7 +54,7 @@ public class SearchServiceImpl implements SearchService {
             return response;
         }
 
-        List<ApiData> data = collectResponse(sortedFoundPages, limit, query, sortedQueryLemmas);
+        List<SearchData> data = collectResponse(sortedFoundPages, limit, query, sortedQueryLemmas);
 
         if (data.size() == 0){
             response.setResult(false);
@@ -64,13 +63,14 @@ public class SearchServiceImpl implements SearchService {
         }
 
         response.setResult(true);
+        response.setCount(data.size());
         response.setData(data);
         return response;
     }
 
     private Map<String, Integer> parseFilterAndSortQueryLemmas(String query, Site site){
-        Integer lemmasAmount = lemmaService.countAllLemmas();
-        double frequencyLimit = lemmasAmount * 0.005;
+        int pageAmount = pageService.countAllPages();
+        double frequencyLimit = pageAmount * 0.75;
 
         Map<String, Integer> queryLemmas = new HashMap<>();
         try {
@@ -84,11 +84,7 @@ public class SearchServiceImpl implements SearchService {
 
         queryLemmas.replaceAll((k, v) -> lemmaService.findFrequencyByLemmaAndSite(k, site != null ? String.valueOf(site.getId()) : "%"));
 
-        queryLemmas.values().removeIf(value -> value == 0);
-
-        queryLemmas.keySet().removeIf(searchLemma ->
-                (double) (lemmasAmount / lemmaService.findFrequencyByLemmaAndSite(
-                        searchLemma, site != null ? String.valueOf(site.getId()) : "%")) < frequencyLimit);
+        queryLemmas.values().removeIf(value -> (value == 0) || (value > frequencyLimit));
 
         Map<String, Integer> resultMap = new HashMap<>();
         for(String word : query.split(" ")){
@@ -163,8 +159,8 @@ public class SearchServiceImpl implements SearchService {
         return queryWordsToLemmas;
     }
 
-    private List<ApiData> collectResponse(Map<Page, Float> sortedFoundPages, int limit, String query, Map<String, Integer> sortedLemmas){
-        List<ApiData> data = new ArrayList<>();
+    private List<SearchData> collectResponse(Map<Page, Float> sortedFoundPages, int limit, String query, Map<String, Integer> sortedLemmas){
+        List<SearchData> data = new ArrayList<>();
         float maxRelevancy = sortedFoundPages.values().stream().max(Float::compare).get();
 
         String[] queryList = query.split(" ");
@@ -193,8 +189,8 @@ public class SearchServiceImpl implements SearchService {
             if (finalSnippet == null)
                 continue;
 
-            data.add(new ApiData(url, siteName, path, title, finalSnippet, relevance));
-            if (data.size() == limit) break;
+            data.add(new SearchData(url, siteName, path, title, finalSnippet, relevance));
+//            if (data.size() == limit) break;
         }
         return data;
     }
@@ -224,7 +220,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private  String markup(String text, String query){
-        String regex = "[^а-яА-Я\s]";
+        String regex = "[^а-яА-Яa-zA-Z\s]";
 
         String[] textWords = text.split(" ");
         List<String> queryWords = Arrays.asList(query.split(" "));

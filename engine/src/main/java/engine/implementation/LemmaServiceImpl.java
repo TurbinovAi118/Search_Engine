@@ -9,6 +9,7 @@ import engine.repositories.LemmaRepository;
 import engine.services.LemmaService;
 import lombok.RequiredArgsConstructor;
 import org.apache.lucene.morphology.LuceneMorphology;
+import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -25,10 +26,15 @@ public class LemmaServiceImpl implements LemmaService {
     private final LemmaRepository lemmaRepository;
     private final IndexRepository indexRepository;
 
-    private LuceneMorphology luceneMorph;
+    private static final String ruRegex = "[а-яА-Я]+";
+    private static final String enRegex = "[a-zA-Z]+";
+
+    private LuceneMorphology ruMorph;
+    private LuceneMorphology enMorph;
     {
         try {
-            luceneMorph = new RussianLuceneMorphology();
+            ruMorph = new RussianLuceneMorphology();
+            enMorph = new EnglishLuceneMorphology();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -58,13 +64,14 @@ public class LemmaServiceImpl implements LemmaService {
     @Override
     public Map<String, Integer> parseLemmas(String string, Boolean isText) {
 
-        String regex = "[^а-яА-Я\s]";
+        String regex = "[^а-яА-Яa-zA-Z\s]";
 
-        String text = isText ? string : Jsoup.parse(string).text();
+        String elementRegex = "<[^<>]*>";
+
+        String text = isText ? string : Jsoup.parse(string).text().replaceAll(elementRegex, "");
 
         text = text.replaceAll(regex, "")
                 .replaceAll("\s+", " ").toLowerCase(Locale.ROOT).trim();
-
 
         List<String> allLemmas = new ArrayList<>();
 
@@ -72,7 +79,10 @@ public class LemmaServiceImpl implements LemmaService {
             if (word.isEmpty()){
                 continue;
             }
-            List<String> wordInfo = luceneMorph.getMorphInfo(word);
+            List<String> wordInfo = word.trim().matches(ruRegex) ? ruMorph.getMorphInfo(word) :
+                    word.trim().matches(enRegex) ? enMorph.getMorphInfo(word) : new ArrayList<>();
+            if (wordInfo.isEmpty())
+                continue;
             List<String> checkList = new ArrayList<>();
             wordInfo.stream().map(info -> info.split(" ")).forEach(list -> checkList.addAll(List.of(list)));
             if (!checkList.contains("ПРЕДЛ") && !checkList.contains("СОЮЗ") && !checkList.contains("ЧАСТ") && !checkList.contains("МЕЖД")) {
@@ -95,13 +105,9 @@ public class LemmaServiceImpl implements LemmaService {
 
     @Override
     public List<String> getNormalForms(String word){
-        return luceneMorph.getNormalForms(word);
+        return word.matches(ruRegex) ? ruMorph.getNormalForms(word) :
+                word.matches(enRegex) ? enMorph.getNormalForms(word) : new ArrayList<>();
     }
-//
-//    @Override
-//    public List<String> findAllInIdList(List<Integer> lemmasId) {
-//        return lemmaRepository.findAllInIdList(lemmasId);
-//    }
 
     @Override
     public Integer countLemmasBySiteId(Site site) {
@@ -110,7 +116,7 @@ public class LemmaServiceImpl implements LemmaService {
 
     @Override
     public Integer countAllLemmas() {
-        return lemmaRepository.countAllLemmas();
+        return Math.toIntExact(lemmaRepository.count());
     }
 
     @Override

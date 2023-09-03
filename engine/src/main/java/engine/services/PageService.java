@@ -32,4 +32,6 @@ public interface PageService {
 
     Optional<Page> findPageById(int id);
 
+    Integer countAllPages();
+
 }

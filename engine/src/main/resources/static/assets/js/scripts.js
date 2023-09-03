@@ -1467,6 +1467,9 @@
                             if ($this.next('.API-error').length) {
                                 $this.next('.API-error').remove();
                             }
+                            if ($this.is('[data-btntype="check"]')) {
+                                shiftCheck($this);
+                            }
                         } else {
                             if ($this.next('.API-error').length) {
                                 $this.next('.API-error').text(result.error);
@@ -1474,7 +1477,6 @@
                                 $this.after('<div class="API-error">' + result.error + '</div>');
                             }
                         }
-                        shiftCheck($this);
                     }
                 },
                 stopIndexing: {
@@ -1485,6 +1487,9 @@
                             if ($this.next('.API-error').length) {
                                 $this.next('.API-error').remove();
                             }
+                            if ($this.is('[data-btntype="check"]')) {
+                                shiftCheck($this);
+                            }
                         } else {
                             if ($this.next('.API-error').length) {
                                 $this.next('.API-error').text(result.error);
@@ -1492,7 +1497,6 @@
                                 $this.after('<div class="API-error">' + result.error + '</div>');
                             }
                         }
-                        shiftCheck($this);
                     }
                 },
                 indexPage: {
@@ -1508,7 +1512,6 @@
                             } else {
                                 $this.after('<div class="API-success">Страница поставлена в очередь на обновление / добавление</div>');
                             }
-                            API(send.statistics).init()
                         } else {
                             if ($this.next('.API-success').length) {
                                 $this.next('.API-success').remove();
@@ -1534,7 +1537,7 @@
                             if (data.offset === 0) {
                                 $content.empty();
                             }
-                            $searchResults.find('.SearchResult-amount').text(result.data.length);
+                            $searchResults.find('.SearchResult-amount').text(result.count);
                             var scroll = $(window).scrollTop();
                             result.data.forEach(function(page){
                                 $content.append('<div class="SearchResult-block">' +
@@ -1598,6 +1601,7 @@
                                     case 'INDEXING':
                                         statusClass = 'Statistics-status_pause';
                                         break;
+
                                 }
                                 $('select[name="site"]').append('' +
                                     '<option value="' + site.url + '">' +

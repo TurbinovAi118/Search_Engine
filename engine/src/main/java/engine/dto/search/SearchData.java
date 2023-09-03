@@ -1,11 +1,11 @@
-package engine.dto;
+package engine.dto.search;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class ApiData {
+public class SearchData {
 
     private String site;
     private String siteName;

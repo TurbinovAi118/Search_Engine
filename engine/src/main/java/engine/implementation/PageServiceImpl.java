@@ -23,7 +23,7 @@ import java.util.concurrent.Executors;
 
 @Service
 @AllArgsConstructor
-public class PageServiceImpl  implements PageService {
+public class PageServiceImpl implements PageService {
 
     private final PageRepository pageRepository;
     private final SiteService siteService;
@@ -127,6 +127,11 @@ public class PageServiceImpl  implements PageService {
     @Override
     public Optional<Page> findPageById(int id) {
         return pageRepository.findById(id);
+    }
+
+    @Override
+    public Integer countAllPages() {
+        return Math.toIntExact(pageRepository.count());
     }
 
     @Override
