@@ -34,6 +34,7 @@ public class SearchServiceImpl implements SearchService {
         ApiSearchResponse response = new ApiSearchResponse();
 
         int limit = Integer.parseInt(body.get("limit"));
+        int offset = Integer.parseInt(body.get("offset"));
         String query = body.get("query").toLowerCase(Locale.ROOT);
         Site site = body.get("site") != null ? siteService.findBySiteUrl(body.get("site"))
                 .orElseGet(() -> siteService.findBySiteUrl(body.get("site") + "/").get()) : null;
@@ -64,7 +65,7 @@ public class SearchServiceImpl implements SearchService {
 
         response.setResult(true);
         response.setCount(data.size());
-        response.setData(data);
+        response.setData(data.size() > limit ? data.subList(offset, Math.min(offset + 10, data.size())) : data);
         return response;
     }
 
@@ -269,7 +270,6 @@ public class SearchServiceImpl implements SearchService {
 
         return String.join(" ", textList);
     }
-
 
     private static String getSnippetArray(String elementText) {
         int indexOfCommon = elementText.toLowerCase(Locale.ROOT).indexOf("<b>");
