@@ -8,7 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface SiteRepository extends CrudRepository<Site, Integer> {
-
     Optional<Site> findBySiteUrl(String url);
 
     Boolean existsBySiteUrl(String url);

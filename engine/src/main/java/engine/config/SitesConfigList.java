@@ -15,7 +15,7 @@ import java.util.List;
 public class SitesConfigList {
     List<SiteConfig> sites;
 
-    public SiteConfig findSiteByURL(String url){
+    public SiteConfig findSiteByURL(String url) {
         return sites.stream().filter(sites -> sites.getUrl().equals(url)).findFirst().get();
     }
 }

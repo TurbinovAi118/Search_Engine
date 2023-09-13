@@ -16,7 +16,7 @@ import java.util.Map;
 public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
 
     @Modifying
-    @Query(value = "INSERT INTO lemma (site_id, lemma, frequency) VALUE (:site_id, :lemma, 1) ON DUPLICATE KEY UPDATE frequency = frequency + 1",  nativeQuery = true)
+    @Query(value = "INSERT INTO lemma (site_id, lemma, frequency) VALUE (:site_id, :lemma, 1) ON DUPLICATE KEY UPDATE frequency = frequency + 1", nativeQuery = true)
     @Transactional
     void add(Integer site_id, String lemma);
 
@@ -30,7 +30,4 @@ public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
 
     @Query(value = "SELECT frequency FROM `lemma` WHERE lemma = :lemma AND site_id LIKE :siteId", nativeQuery = true)
     List<Integer> findFrequencyByLemmaAndSite(String lemma, String siteId);
-
-
-
 }

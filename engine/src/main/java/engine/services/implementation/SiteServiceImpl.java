@@ -1,13 +1,10 @@
-package engine.implementation;
+package engine.services.implementation;
 
 import engine.dto.ApiResponse;
 import engine.models.Site;
-import engine.models.enums.SiteStatus;
 import engine.repositories.SiteRepository;
 import engine.services.SiteService;
 import lombok.AllArgsConstructor;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

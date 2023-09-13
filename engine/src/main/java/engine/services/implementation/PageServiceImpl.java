@@ -1,4 +1,4 @@
-package engine.implementation;
+package engine.services.implementation;
 
 import engine.config.SiteConfig;
 import engine.config.SitesConfigList;
@@ -41,8 +41,7 @@ public class PageServiceImpl implements PageService {
     @Override
     public List<Page> addAll(List<Page> pageList){
         List<Page> addedPages = new ArrayList<>();
-        Iterable<Page> iterable = pageList;
-        pageRepository.saveAll(iterable).forEach(addedPages::add);
+        pageRepository.saveAll(pageList).forEach(addedPages::add);
         return addedPages;
     }
 

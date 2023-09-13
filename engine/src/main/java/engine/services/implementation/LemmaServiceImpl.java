@@ -1,4 +1,4 @@
-package engine.implementation;
+package engine.services.implementation;
 
 import engine.models.Index;
 import engine.models.Lemma;
@@ -12,7 +12,6 @@ import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -31,6 +30,7 @@ public class LemmaServiceImpl implements LemmaService {
 
     private LuceneMorphology ruMorph;
     private LuceneMorphology enMorph;
+
     {
         try {
             ruMorph = new RussianLuceneMorphology();
@@ -46,7 +46,7 @@ public class LemmaServiceImpl implements LemmaService {
 
         boolean invalid = String.valueOf(page.getResponseCode()).startsWith("4") || String.valueOf(page.getResponseCode()).startsWith("5");
 
-        if (!invalid){
+        if (!invalid) {
             lemmas = parseLemmas(page.getContent(), false);
         }
 
@@ -54,7 +54,7 @@ public class LemmaServiceImpl implements LemmaService {
             for (String lemma : lemmas.keySet()) {
                 lemmaRepository.add(page.getSite().getId(), lemma);
                 List<Lemma> indexLemmas = lemmaRepository.findLemmaByLemmaAndSite(lemma, String.valueOf(page.getSite().getId()));
-                for (Lemma indexLemma : indexLemmas){
+                for (Lemma indexLemma : indexLemmas) {
                     indexRepository.save(new Index(page, indexLemma, lemmas.get(lemma)));
                 }
             }
@@ -63,7 +63,6 @@ public class LemmaServiceImpl implements LemmaService {
 
     @Override
     public Map<String, Integer> parseLemmas(String string, Boolean isText) {
-
         String regex = "[^а-яА-Яa-zA-Z\s]";
 
         String elementRegex = "<[^<>]*>";
@@ -75,8 +74,8 @@ public class LemmaServiceImpl implements LemmaService {
 
         List<String> allLemmas = new ArrayList<>();
 
-        for (String word : text.split(" ")){
-            if (word.isEmpty()){
+        for (String word : text.split(" ")) {
+            if (word.isEmpty()) {
                 continue;
             }
             List<String> wordInfo = word.trim().matches(ruRegex) ? ruMorph.getMorphInfo(word) :
@@ -91,7 +90,7 @@ public class LemmaServiceImpl implements LemmaService {
         }
 
         List<String> sortedLemmas = allLemmas.stream()
-                .map(wordInfo ->wordInfo.split("\\|")[0])
+                .map(wordInfo -> wordInfo.split("\\|")[0])
                 .collect(Collectors.toList());
 
         List<String> uniqueLemmas = sortedLemmas.stream().distinct().collect(Collectors.toList());
@@ -104,7 +103,7 @@ public class LemmaServiceImpl implements LemmaService {
     }
 
     @Override
-    public List<String> getNormalForms(String word){
+    public List<String> getNormalForms(String word) {
         return word.matches(ruRegex) ? ruMorph.getNormalForms(word) :
                 word.matches(enRegex) ? enMorph.getNormalForms(word) : new ArrayList<>();
     }
@@ -133,7 +132,6 @@ public class LemmaServiceImpl implements LemmaService {
     public Integer findFrequencyByLemmaAndSite(String lemma, String siteId) {
         return lemmaRepository.findFrequencyByLemmaAndSite(lemma, siteId).stream().findFirst().orElse(0);
     }
-
 
 
 }

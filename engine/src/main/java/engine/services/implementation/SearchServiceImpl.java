@@ -1,10 +1,9 @@
-package engine.implementation;
+package engine.services.implementation;
 
 import engine.dto.search.ApiSearchResponse;
 import engine.dto.search.SearchData;
 import engine.models.Lemma;
 import engine.models.Page;
-import engine.models.Site;
 import engine.repositories.IndexRepository;
 import engine.services.LemmaService;
 import engine.services.PageService;
@@ -13,6 +12,7 @@ import engine.services.SiteService;
 import lombok.AllArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
@@ -36,12 +36,12 @@ public class SearchServiceImpl implements SearchService {
         int limit = Integer.parseInt(body.get("limit"));
         int offset = Integer.parseInt(body.get("offset"));
         String query = body.get("query").toLowerCase(Locale.ROOT);
-        Site site = body.get("site") != null ? siteService.findBySiteUrl(body.get("site"))
-                .orElseGet(() -> siteService.findBySiteUrl(body.get("site") + "/").get()) : null;
+        String site = body.get("site") != null ? String.valueOf(siteService.findBySiteUrl(body.get("site")).get().getId())
+                : "%";
 
         Map<String, Integer> sortedQueryLemmas = parseFilterAndSortQueryLemmas(query, site);
 
-        if (sortedQueryLemmas == null || sortedQueryLemmas.size() == 0){
+        if (sortedQueryLemmas == null || sortedQueryLemmas.size() == 0) {
             response.setResult(false);
             response.setError("Задан неверный поисковый запрос.");
             return response;
@@ -49,7 +49,7 @@ public class SearchServiceImpl implements SearchService {
 
         Map<Page, Float> sortedFoundPages = findAndSortResultPages(sortedQueryLemmas, site);
 
-        if (sortedFoundPages == null){
+        if (sortedFoundPages == null) {
             response.setResult(false);
             response.setError("По данному запросу не найдено результатов");
             return response;
@@ -57,7 +57,7 @@ public class SearchServiceImpl implements SearchService {
 
         List<SearchData> data = collectResponse(sortedFoundPages, limit, query, sortedQueryLemmas);
 
-        if (data.size() == 0){
+        if (data.size() == 0) {
             response.setResult(false);
             response.setError("По данному запросу не найдено результатов");
             return response;
@@ -65,11 +65,12 @@ public class SearchServiceImpl implements SearchService {
 
         response.setResult(true);
         response.setCount(data.size());
-        response.setData(data.size() > limit ? data.subList(offset, Math.min(offset + 10, data.size())) : data);
+        response.setData(data.size() > limit ? data.subList(offset, Math.min(offset + limit, data.size())) : data);
         return response;
     }
 
-    private Map<String, Integer> parseFilterAndSortQueryLemmas(String query, Site site){
+    private Map<String, Integer> parseFilterAndSortQueryLemmas(String query, String site) {
+
         int pageAmount = pageService.countAllPages();
         double frequencyLimit = pageAmount * 0.75;
 
@@ -83,17 +84,22 @@ public class SearchServiceImpl implements SearchService {
         if (queryLemmas.size() == 0)
             return null;
 
-        queryLemmas.replaceAll((k, v) -> lemmaService.findFrequencyByLemmaAndSite(k, site != null ? String.valueOf(site.getId()) : "%"));
+        queryLemmas.replaceAll((k, v) -> lemmaService.findFrequencyByLemmaAndSite(k, site));
 
-        queryLemmas.values().removeIf(value -> (value == 0) || (value > frequencyLimit));
+        queryLemmas.values().removeIf(value -> value == 0);
+
+        if (queryLemmas.size() > 1)
+            queryLemmas.values().removeIf(value -> value > frequencyLimit);
+
+
 
         Map<String, Integer> resultMap = new HashMap<>();
-        for(String word : query.split(" ")){
+        for (String word : query.split(" ")) {
             Map<String, Integer> cacheMap = new HashMap<>();
             ArrayList<String> list = (ArrayList<String>) lemmaService.getNormalForms(word);
 
-            for (String normalWord : list){
-                if (queryLemmas.containsKey(normalWord)){
+            for (String normalWord : list) {
+                if (queryLemmas.containsKey(normalWord)) {
                     cacheMap.put(normalWord, queryLemmas.get(normalWord));
                 }
             }
@@ -106,15 +112,16 @@ public class SearchServiceImpl implements SearchService {
         }
 
         return resultMap.entrySet().stream()
-                        .sorted(Map.Entry.comparingByValue())
-                        .collect(Collectors.toMap(
-                                Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+                .sorted(Map.Entry.comparingByValue())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
     }
 
-    private Map<Page, Float> findAndSortResultPages(Map<String, Integer> queryLemmas, Site site){
+    private Map<Page, Float> findAndSortResultPages(Map<String, Integer> queryLemmas, String site) {
         String firstLemma = queryLemmas.keySet().stream().findFirst().get();
 
-        List<Lemma> firstLemmas = lemmaService.findLemmaByLemmaAndSite(firstLemma, site != null ? String.valueOf(site.getId()) : "%");
+
+        List<Lemma> firstLemmas = lemmaService.findLemmaByLemmaAndSite(firstLemma, site);
         Map<Page, Float> foundPages = new HashMap<>();
         firstLemmas.forEach(lemma -> {
             for (Page page : findPagesByLemmas(lemma.getId())) {
@@ -122,8 +129,8 @@ public class SearchServiceImpl implements SearchService {
             }
         });
 
-        queryLemmas.keySet().forEach(queryLemma -> {
-            List<Lemma> lemmas = lemmaService.findLemmaByLemmaAndSite(queryLemma, site != null ? String.valueOf(site.getId()) : "%");
+        for (String queryLemma : queryLemmas.keySet()){
+            List<Lemma> lemmas = lemmaService.findLemmaByLemmaAndSite(queryLemma, site);
             for (Lemma lemma : lemmas) {
                 foundPages.keySet().forEach(page -> {
                     if (indexRepository.existsByPageAndLemma(page, lemma)) {
@@ -132,21 +139,21 @@ public class SearchServiceImpl implements SearchService {
                 });
                 foundPages.keySet().removeIf(page -> !indexRepository.existsByPageAndLemma(page, lemma));
             }
-        });
+        };
 
-        if (foundPages.size() == 0){
+        if (foundPages.size() == 0) {
             return null;
         }
 
         return foundPages.entrySet().stream()
-                        .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                        .collect(Collectors.toMap(
-                                Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
     }
 
-    private Map<String, Integer> defineQueryWordsInLemmas(String[] queryList, Map<String, Integer> sortedQueryLemmas){
+    private Map<String, Integer> defineQueryWordsInLemmas(String[] queryList, Map<String, Integer> sortedQueryLemmas) {
         Map<String, Integer> queryWordsToLemmas = new HashMap<>();
-        for (String queryWord : queryList){
+        for (String queryWord : queryList) {
 
             Map<String, Integer> lemmasInQuery = new HashMap<>();
             lemmaService.getNormalForms(queryWord).forEach(word -> {
@@ -160,16 +167,16 @@ public class SearchServiceImpl implements SearchService {
         return queryWordsToLemmas;
     }
 
-    private List<SearchData> collectResponse(Map<Page, Float> sortedFoundPages, int limit, String query, Map<String, Integer> sortedLemmas){
+    private List<SearchData> collectResponse(Map<Page, Float> sortedFoundPages, int limit, String query, Map<String, Integer> sortedLemmas) {
         List<SearchData> data = new ArrayList<>();
         float maxRelevancy = sortedFoundPages.values().stream().max(Float::compare).get();
 
         String[] queryList = query.split(" ");
         Map<String, Integer> queryWordsToLemmas = defineQueryWordsInLemmas(queryList, sortedLemmas);
 
-        for (Page page : sortedFoundPages.keySet()){
+        for (Page page : sortedFoundPages.keySet()) {
 
-            String url = page.getSite().getSiteUrl().endsWith("/") ? page.getSite().getSiteUrl().replaceFirst(".$","") :
+            String url = page.getSite().getSiteUrl().endsWith("/") ? page.getSite().getSiteUrl().replaceFirst(".$", "") :
                     page.getSite().getSiteUrl();
             String siteName = page.getSite().getSiteName();
             String path = page.getPath();
@@ -182,7 +189,7 @@ public class SearchServiceImpl implements SearchService {
             String finalSnippet = null;
             try {
                 finalSnippet = parseSnippet(queryWordsToLemmas, doc, query);
-            } catch (Exception e){
+            } catch (Exception e) {
                 System.out.println("Snippet parsing failed in " + url + path + ". Query is: " + query);
                 e.printStackTrace();
             }
@@ -191,12 +198,11 @@ public class SearchServiceImpl implements SearchService {
                 continue;
 
             data.add(new SearchData(url, siteName, path, title, finalSnippet, relevance));
-//            if (data.size() == limit) break;
         }
         return data;
     }
 
-    private String parseSnippet(Map<String, Integer> queryLemmas, Document doc, String query){
+    private String parseSnippet(Map<String, Integer> queryLemmas, Document doc, String query) {
         String maxRelevanceQueryWord = queryLemmas.entrySet().stream()
                 .min(Map.Entry.comparingByValue(Comparator.reverseOrder())).get().getKey();
 
@@ -205,13 +211,15 @@ public class SearchServiceImpl implements SearchService {
                 doc.body().getElementsContainingOwnText(maxRelevanceQueryWord);
 
         String elementText;
-        if (foundElements.size() > 0)
-            elementText = foundElements.get(0).text();
-        else
-            return null;
+        String snippet = "";
+        for (Element element : foundElements) {
+            elementText = element.text();
+            snippet = markup(elementText, query);
+            if (!snippet.isEmpty())
+                break;
+        }
 
-        String snippet = markup(elementText, query);
-        if (snippet.isBlank()){
+        if (snippet.isEmpty()) {
             return null;
         }
 
@@ -220,7 +228,7 @@ public class SearchServiceImpl implements SearchService {
         return "..." + finalSnippet + "...";
     }
 
-    private  String markup(String text, String query){
+    private String markup(String text, String query) {
         String regex = "[^а-яА-Яa-zA-Z\s]";
 
         String[] textWords = text.split(" ");
@@ -230,7 +238,7 @@ public class SearchServiceImpl implements SearchService {
         List<List<String>> queryLemmas = new ArrayList<>();
         List<String> textList = new ArrayList<>();
 
-        for(String word : textWords) {
+        for (String word : textWords) {
             textList.add(word);
             try {
                 textLemmas.add(lemmaService.getNormalForms(word.replaceAll(regex, "").toLowerCase(Locale.ROOT)));
@@ -244,13 +252,14 @@ public class SearchServiceImpl implements SearchService {
         StringJoiner queryLemmasJoiner = new StringJoiner(" ");
         queryLemmas.forEach(list -> queryLemmasJoiner.add(String.join(" ", list)));
 
-        int firstWordIndex = textLemmas.indexOf(queryLemmas.get(0));
+        int firstWordIndex = textLemmas.indexOf(textLemmas.stream().filter(list -> list.containsAll(queryLemmas.get(0)))
+                .collect(Collectors.toList()).get(0));
         List<List<String>> textLemmasSub;
         boolean forWhile = true;
         if (firstWordIndex == -1)
             return "";
 
-        while (forWhile){
+        while (forWhile) {
             textLemmasSub = textLemmas.subList(firstWordIndex, textLemmas.size());
             StringJoiner textChecker = new StringJoiner(" ");
             textLemmasSub.forEach(list -> textChecker.add(String.join(" ", list)));
@@ -259,13 +268,13 @@ public class SearchServiceImpl implements SearchService {
             else {
                 textLemmasSub = textLemmas.subList(firstWordIndex + 1, textLemmas.size());
                 int common = (!textLemmasSub.contains(queryLemmas.get(0))) ? -1 : textLemmasSub.indexOf(queryLemmas.get(0));
-                firstWordIndex += (common == -1) ? -(firstWordIndex+1) : common + 1;
+                firstWordIndex += (common == -1) ? -(firstWordIndex + 1) : common + 1;
             }
             if (firstWordIndex == -1)
                 return "";
         }
         for (int i = 0; i < queryWords.size(); i++) {
-            textList.set(firstWordIndex+i, "<b>" + textList.get(firstWordIndex+i) + "</b>");
+            textList.set(firstWordIndex + i, "<b>" + textList.get(firstWordIndex + i) + "</b>");
         }
 
         return String.join(" ", textList);
@@ -273,14 +282,14 @@ public class SearchServiceImpl implements SearchService {
 
     private static String getSnippetArray(String elementText) {
         int indexOfCommon = elementText.toLowerCase(Locale.ROOT).indexOf("<b>");
-        int lastIndexOfCommon = elementText.toLowerCase(Locale.ROOT).lastIndexOf("</b>")+4;
-        if (indexOfCommon == -1){
+        int lastIndexOfCommon = elementText.toLowerCase(Locale.ROOT).lastIndexOf("</b>") + 4;
+        if (indexOfCommon == -1) {
             return "";
         }
         int indexOfFirstComma = elementText.substring(0, indexOfCommon).lastIndexOf(",");
         int indexOfLastComma = elementText.substring(lastIndexOfCommon).indexOf(",");
 
-        String startOfSnippet = elementText.substring(indexOfFirstComma == -1 ? 0 : indexOfFirstComma+1, lastIndexOfCommon);
+        String startOfSnippet = elementText.substring(indexOfFirstComma == -1 ? 0 : indexOfFirstComma + 1, lastIndexOfCommon);
         String endOfSnippet = elementText.substring(lastIndexOfCommon, (indexOfLastComma == -1 ? elementText.length() : lastIndexOfCommon + indexOfLastComma));
         String text = startOfSnippet + endOfSnippet;
         text = text.trim();

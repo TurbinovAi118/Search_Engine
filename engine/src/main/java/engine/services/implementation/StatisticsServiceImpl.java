@@ -1,4 +1,4 @@
-package engine.implementation;
+package engine.services.implementation;
 
 import engine.dto.statistics.DetailedStatisticsItem;
 import engine.dto.statistics.StatisticsData;
@@ -32,9 +32,9 @@ public class StatisticsServiceImpl implements StatisticsService {
         total.setIndexing(IndexingServiceImpl.isIndexing);
 
         List<DetailedStatisticsItem> detailed = new ArrayList<>();
-        for(Site site : sitesList){
+        for (Site site : sitesList) {
 
-            String url = site.getSiteUrl().endsWith("/") ? site.getSiteUrl().replaceFirst(".$","") :
+            String url = site.getSiteUrl().endsWith("/") ? site.getSiteUrl().replaceFirst(".$", "") :
                     site.getSiteUrl();
 
             DetailedStatisticsItem item = new DetailedStatisticsItem();

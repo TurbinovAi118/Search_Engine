@@ -12,7 +12,6 @@ import java.io.Serializable;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class Page {
 
     public Page(Site site, String path, int responseCode, String content) {

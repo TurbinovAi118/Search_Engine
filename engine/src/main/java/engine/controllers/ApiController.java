@@ -22,7 +22,7 @@ public class ApiController {
     private final SearchService searchService;
 
     @PostMapping("/indexPage")
-    public ResponseEntity<ApiResponse> add(@RequestParam Map<String, String> body){
+    public ResponseEntity<ApiResponse> add(@RequestParam Map<String, String> body) {
         ApiResponse response = pageService.addSinglePage(body.get("url"));
         return response.isResult() ? ResponseEntity.ok(response) : ResponseEntity.status(404).body(response);
     }
@@ -47,7 +47,7 @@ public class ApiController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiSearchResponse> search(@RequestParam Map<String, String> body){
+    public ResponseEntity<ApiSearchResponse> search(@RequestParam Map<String, String> body) {
         ApiSearchResponse response = searchService.search(body);
         return response.isResult() ? ResponseEntity.status(200).body(response) : ResponseEntity.status(404).body(response);
     }

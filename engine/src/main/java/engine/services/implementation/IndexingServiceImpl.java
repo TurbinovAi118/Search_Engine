@@ -1,5 +1,6 @@
-package engine.implementation;
+package engine.services.implementation;
 
+import engine.config.SiteConfig;
 import engine.config.SitesConfigList;
 import engine.dto.ApiResponse;
 import engine.models.Page;
@@ -9,6 +10,7 @@ import engine.services.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,11 +37,12 @@ public class IndexingServiceImpl implements IndexingService {
     public ApiResponse startIndexing() {
         ApiResponse response = new ApiResponse();
         pageList = Collections.synchronizedList(new ArrayList<>());
-        if (isIndexing){
+        if (isIndexing) {
             response.setResult(false);
             response.setError("Индексация уже запущена");
             return response;
         }
+
         isIndexing = true;
         executor = Executors.newSingleThreadExecutor();
         futureIndexer = new FutureTask<>(new SiteIndexer(siteService, pageService, lemmaService, sites), "");
@@ -51,9 +54,9 @@ public class IndexingServiceImpl implements IndexingService {
     }
 
     @Override
-    public ApiResponse stopIndexing(){
+    public ApiResponse stopIndexing() {
         ApiResponse response = new ApiResponse();
-        if (isIndexing){
+        if (isIndexing) {
             List<Site> sites = siteService.list();
 
             futureIndexer.cancel(true);
@@ -64,7 +67,7 @@ public class IndexingServiceImpl implements IndexingService {
 
             Executors.newSingleThreadExecutor().execute(() -> parseRemainingLemmas(pageList));
 
-            for (Site site : sites){
+            for (Site site : sites) {
                 if (site.getStatus().equals(SiteStatus.INDEXING)) {
                     site.setLastError("Индексация остановлена пользователем");
                     site.setStatus(SiteStatus.FAILED);
@@ -82,19 +85,19 @@ public class IndexingServiceImpl implements IndexingService {
         return response;
     }
 
-    private void parseRemainingLemmas(List<Page> pageList){
+    public void parseRemainingLemmas(List<Page> pageList) {
         if (pageList.size() > 0) {
             List<Page> pagesForLemmas = pageService.addAll(pageList);
-            for (Page page : pagesForLemmas){
+            for (Page page : pagesForLemmas) {
                 lemmaService.addLemmas(page);
             }
             pageList.clear();
         }
     }
 
-    public static void awaitPoolTermination(ForkJoinPool pool){
-        while (true){
-            if (pool.getActiveThreadCount() == 0){
+    public static void awaitPoolTermination(ForkJoinPool pool) {
+        while (true) {
+            if (pool.getActiveThreadCount() == 0) {
                 break;
             }
         }

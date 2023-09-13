@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PageService {
-
     void add(Page page);
 
     List<Page> addAll(List<Page> pageList);
@@ -33,5 +32,4 @@ public interface PageService {
     Optional<Page> findPageById(int id);
 
     Integer countAllPages();
-
 }

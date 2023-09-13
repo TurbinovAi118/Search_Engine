@@ -10,7 +10,6 @@ import java.util.Map;
 
 
 public interface LemmaService {
-
     void addLemmas(Page page);
 
     Map<String, Integer> parseLemmas(String html, Boolean isText) throws IOException;
@@ -26,7 +25,4 @@ public interface LemmaService {
     Integer findFrequencyByLemmaAndSite(String lemma, String siteId);
 
     List<String> getNormalForms(String word);
-
-//    List<String> findAllInIdList(List<Integer> lemmasId);
-
 }

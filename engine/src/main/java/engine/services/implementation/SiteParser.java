@@ -1,4 +1,4 @@
-package engine.implementation;
+package engine.services.implementation;
 
 import engine.models.Page;
 import engine.models.Site;
@@ -13,8 +13,10 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RecursiveAction;
 import java.util.stream.Collectors;
+
 
 @RequiredArgsConstructor
 public class SiteParser extends RecursiveAction {
@@ -27,7 +29,7 @@ public class SiteParser extends RecursiveAction {
     private final SiteService siteService;
     private final LemmaService lemmaService;
 
-    private synchronized boolean checkLink(String url){
+    private synchronized boolean checkLink(String url) {
         path = site.getSiteUrl().endsWith("/") ?
                 url.replace(site.getSiteUrl(), "/") :
                 url.replace(site.getSiteUrl(), "");
@@ -37,9 +39,7 @@ public class SiteParser extends RecursiveAction {
                 && !path.equals("/")
                 && !path.endsWith("#")
                 && checkType(path)
-                //
-//                && !path.contains("sort")
-                //
+                && !path.contains("sort")
                 && !path.contains("?")
                 && !path.contains("&")
                 && !path.substring(path.lastIndexOf("/")).contains("#")
@@ -47,7 +47,7 @@ public class SiteParser extends RecursiveAction {
                 && !pageService.existPageByPath(path);
     }
 
-    private boolean checkType (String url){
+    private boolean checkType(String url) {
         return !url.toLowerCase(Locale.ROOT)
                 .contains(".jpg")
                 && !url.contains(".jpeg")
@@ -64,8 +64,8 @@ public class SiteParser extends RecursiveAction {
                 && !url.contains(".mp4");
     }
 
-    private static synchronized void sleepBeforeConnect(){
-        try{
+    private static synchronized void sleepBeforeConnect() {
+        try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -79,28 +79,13 @@ public class SiteParser extends RecursiveAction {
             Document doc = new SiteConnector(currentUrl).getDoc();
 
             Elements docElements = doc.select("a");
-            for (Element element : docElements){
-                if (IndexingServiceImpl.futureIndexer.isCancelled()){
+            for (Element element : docElements) {
+                if (IndexingServiceImpl.futureIndexer.isCancelled()) {
                     break;
                 }
                 String href = element.attr("abs:href");
                 synchronized (SiteParser.class) {
-                    if (checkLink(href)) {
-                        int statusCode = Jsoup.connect(href).ignoreHttpErrors(true).execute().statusCode();
-
-                        String content = (statusCode == 200) ? new SiteConnector(href).getDoc()
-                                        .html() : "";
-
-                        IndexingServiceImpl.pageList.add(new Page(site, path, statusCode, content));
-
-                        if (IndexingServiceImpl.pageList.size() >= 100)
-                            multiInsertPages();
-
-                        if (statusCode == 200) {
-                            SiteParser task = new SiteParser(site, href, pageService, siteService, lemmaService);
-                            task.fork();
-                        }
-                    }
+                    indexPage(href);
                 }
             }
         } catch (IOException e) {
@@ -109,10 +94,28 @@ public class SiteParser extends RecursiveAction {
         }
     }
 
-    private void multiInsertPages(){
+    private void indexPage(String href) throws IOException {
+        if (checkLink(href)) {
+            int statusCode = Jsoup.connect(href).ignoreHttpErrors(true).execute().statusCode();
+
+            String content = (statusCode == 200) ? new SiteConnector(href).getDoc().html() : "";
+
+            IndexingServiceImpl.pageList.add(new Page(site, path, statusCode, content));
+
+            if (IndexingServiceImpl.pageList.size() >= 100)
+                multiInsertPages();
+
+            if (statusCode == 200) {
+                SiteParser task = new SiteParser(site, href, pageService, siteService, lemmaService);
+                task.fork();
+            }
+        }
+    }
+
+    private void multiInsertPages() {
         List<Page> pagesForLemmas = pageService.addAll(IndexingServiceImpl.pageList);
 
-        for (Page page : pagesForLemmas){
+        for (Page page : pagesForLemmas) {
             lemmaService.addLemmas(page);
         }
 
