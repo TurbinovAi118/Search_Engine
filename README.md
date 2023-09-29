@@ -17,3 +17,5 @@ The following technologies have been used in the project development: Spring, Ma
 ---
 
 <h2>Local project launch</h2>
+
+On the right side of the Maven workflow block, select install, and then the project can be run from the command line using the command: java -jar <jar-file-name>.jar
