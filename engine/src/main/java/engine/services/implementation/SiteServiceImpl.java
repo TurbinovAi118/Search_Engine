@@ -61,7 +61,7 @@ public class SiteServiceImpl implements SiteService {
 
     @Override
     public Optional<Site> findBySiteUrl(String url) {
-        return siteRepository.findBySiteUrl(url);
+        return siteRepository.findBySiteUrl(url).isPresent() ? siteRepository.findBySiteUrl(url) : siteRepository.findBySiteUrl(url+"/");
     }
 
     @Override

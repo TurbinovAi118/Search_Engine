@@ -36,8 +36,7 @@ public class SearchServiceImpl implements SearchService {
         int limit = Integer.parseInt(body.get("limit"));
         int offset = Integer.parseInt(body.get("offset"));
         String query = body.get("query").toLowerCase(Locale.ROOT);
-        String site = body.get("site") != null ? String.valueOf(siteService.findBySiteUrl(body.get("site")).get().getId())
-                : "%";
+        String site = body.get("site") != null ? String.valueOf(siteService.findBySiteUrl(body.get("site")).get().getId()) : "%";
 
         Map<String, Integer> sortedQueryLemmas = parseFilterAndSortQueryLemmas(query, site);
 
@@ -132,14 +131,10 @@ public class SearchServiceImpl implements SearchService {
         for (String queryLemma : queryLemmas.keySet()){
             List<Lemma> lemmas = lemmaService.findLemmaByLemmaAndSite(queryLemma, site);
             for (Lemma lemma : lemmas) {
-                foundPages.keySet().forEach(page -> {
-                    if (indexRepository.existsByPageAndLemma(page, lemma)) {
-                        foundPages.put(page, foundPages.get(page) + indexRepository.findByLemmaAndPage(lemma, page).getRank());
-                    }
-                });
-                foundPages.keySet().removeIf(page -> !indexRepository.existsByPageAndLemma(page, lemma));
+                for (Page page : findPagesByLemmas(lemma.getId()))
+                    foundPages.put(page, indexRepository.findByLemmaAndPage(lemma, page).getRank());
             }
-        };
+        }
 
         if (foundPages.size() == 0) {
             return null;
@@ -214,7 +209,11 @@ public class SearchServiceImpl implements SearchService {
         String snippet = "";
         for (Element element : foundElements) {
             elementText = element.text();
-            snippet = markup(elementText, query);
+            try {
+                snippet = markup(elementText, query);
+            } catch (Exception e) {
+                continue;
+            }
             if (!snippet.isEmpty())
                 break;
         }
