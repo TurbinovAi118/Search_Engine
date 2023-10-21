@@ -1,4 +1,4 @@
-package engine.services.implementation;
+package engine.utils;
 
 import engine.config.SiteConfig;
 import engine.config.SitesConfigList;
@@ -9,6 +9,7 @@ import engine.models.enums.SiteStatus;
 import engine.services.LemmaService;
 import engine.services.PageService;
 import engine.services.SiteService;
+import engine.services.implementation.IndexingServiceImpl;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;

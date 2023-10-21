@@ -17,6 +17,6 @@ public interface IndexRepository extends CrudRepository<Index, Integer> {
 
     boolean existsByPageAndLemma(Page page, Lemma lemma);
 
-    Index findByLemmaAndPage(Lemma lemma, Page page);
+    List<Index> findByLemmaAndPage(Lemma lemma, Page page);
 
 }

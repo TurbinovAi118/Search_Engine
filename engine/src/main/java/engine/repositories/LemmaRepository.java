@@ -30,4 +30,6 @@ public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
 
     @Query(value = "SELECT frequency FROM `lemma` WHERE lemma = :lemma AND site_id LIKE :siteId", nativeQuery = true)
     List<Integer> findFrequencyByLemmaAndSite(String lemma, String siteId);
+
+    Lemma findLemmaById(Integer id);
 }

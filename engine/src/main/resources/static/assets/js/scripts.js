@@ -1476,6 +1476,7 @@
                             } else {
                                 $this.after('<div class="API-error">' + result.error + '</div>');
                             }
+                            shiftCheck($this);
                         }
                     }
                 },
@@ -1496,6 +1497,7 @@
                             } else {
                                 $this.after('<div class="API-error">' + result.error + '</div>');
                             }
+                            shiftCheck($this);
                         }
                     }
                 },

@@ -10,6 +10,7 @@ import engine.repositories.PageRepository;
 import engine.services.LemmaService;
 import engine.services.PageService;
 import engine.services.SiteService;
+import engine.utils.SiteConnector;
 import lombok.AllArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;

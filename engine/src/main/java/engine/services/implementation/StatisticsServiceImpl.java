@@ -23,7 +23,6 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final PageService pageService;
     private final LemmaService lemmaService;
 
-
     @Override
     public StatisticsResponse getStatistics() {
         List<Site> sitesList = siteService.list();

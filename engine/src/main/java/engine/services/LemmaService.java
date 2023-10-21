@@ -25,4 +25,6 @@ public interface LemmaService {
     Integer findFrequencyByLemmaAndSite(String lemma, String siteId);
 
     List<String> getNormalForms(String word);
+
+    Lemma findLemmaById(Integer id);
 }

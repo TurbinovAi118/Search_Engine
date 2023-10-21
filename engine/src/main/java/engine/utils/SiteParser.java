@@ -1,10 +1,11 @@
-package engine.services.implementation;
+package engine.utils;
 
 import engine.models.Page;
 import engine.models.Site;
 import engine.services.LemmaService;
 import engine.services.PageService;
 import engine.services.SiteService;
+import engine.services.implementation.IndexingServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -13,7 +14,6 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RecursiveAction;
 import java.util.stream.Collectors;
 

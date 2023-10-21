@@ -109,6 +109,11 @@ public class LemmaServiceImpl implements LemmaService {
     }
 
     @Override
+    public Lemma findLemmaById(Integer id) {
+        return lemmaRepository.findLemmaById(id);
+    }
+
+    @Override
     public Integer countLemmasBySiteId(Site site) {
         return lemmaRepository.countAllBySite(site);
     }
