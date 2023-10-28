@@ -5,8 +5,12 @@ import engine.dto.ApiResponse;
 import engine.models.Page;
 import engine.models.Site;
 import engine.models.enums.SiteStatus;
+import engine.repositories.PageRepository;
+import engine.repositories.SiteRepository;
 import engine.services.*;
+import engine.utils.LemmaParser;
 import engine.utils.SiteIndexer;
+import engine.utils.SitePatcher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,9 +23,10 @@ import java.util.concurrent.*;
 @RequiredArgsConstructor
 public class IndexingServiceImpl implements IndexingService {
 
-    private final SiteService siteService;
-    private final PageService pageService;
-    private final LemmaService lemmaService;
+    private final SitePatcher sitePatcher;
+    private final LemmaParser lemmaParser;
+    private final SiteRepository siteRepository;
+    private final PageRepository pageRepository;
     private final SitesConfigList sites;
 
     public static volatile RunnableFuture<String> futureIndexer;
@@ -44,7 +49,7 @@ public class IndexingServiceImpl implements IndexingService {
 
         isIndexing = true;
         executor = Executors.newSingleThreadExecutor();
-        futureIndexer = new FutureTask<>(new SiteIndexer(siteService, pageService, lemmaService, sites), "");
+        futureIndexer = new FutureTask<>(new SiteIndexer(sitePatcher, lemmaParser, siteRepository, pageRepository, sites), "");
         executor.submit(futureIndexer);
         executor.shutdown();
 
@@ -56,7 +61,8 @@ public class IndexingServiceImpl implements IndexingService {
     public ApiResponse stopIndexing() {
         ApiResponse response = new ApiResponse();
         if (isIndexing) {
-            List<Site> sites = siteService.list();
+            List<Site> sites = new ArrayList<>();
+            siteRepository.findAll().forEach(sites::add);
 
             futureIndexer.cancel(true);
 
@@ -70,7 +76,7 @@ public class IndexingServiceImpl implements IndexingService {
                 if (site.getStatus().equals(SiteStatus.INDEXING)) {
                     site.setLastError("Индексация остановлена пользователем");
                     site.setStatus(SiteStatus.FAILED);
-                    siteService.patch(site);
+                    sitePatcher.patch(site);
                 }
             }
 
@@ -86,9 +92,10 @@ public class IndexingServiceImpl implements IndexingService {
 
     public void parseRemainingLemmas(List<Page> pageList) {
         if (pageList.size() > 0) {
-            List<Page> pagesForLemmas = pageService.addAll(pageList);
+            List<Page> pagesForLemmas = new ArrayList<>();
+            pageRepository.saveAll(pageList).forEach(pagesForLemmas::add);
             for (Page page : pagesForLemmas) {
-                lemmaService.addLemmas(page);
+                lemmaParser.addLemmas(page);
             }
             pageList.clear();
         }

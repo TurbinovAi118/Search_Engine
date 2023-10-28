@@ -1,12 +1,10 @@
-package engine.services.implementation;
+package engine.utils;
 
 import engine.models.Index;
 import engine.models.Lemma;
 import engine.models.Page;
-import engine.models.Site;
 import engine.repositories.IndexRepository;
 import engine.repositories.LemmaRepository;
-import engine.services.LemmaService;
 import lombok.RequiredArgsConstructor;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
@@ -18,15 +16,15 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service
 @RequiredArgsConstructor
-public class LemmaServiceImpl implements LemmaService {
+@Service
+public class LemmaParser {
 
     private final LemmaRepository lemmaRepository;
     private final IndexRepository indexRepository;
 
-    private static final String ruRegex = "[а-яА-Я]+";
-    private static final String enRegex = "[a-zA-Z]+";
+    private final String ruRegex = "[а-яА-Я]+";
+    private final String enRegex = "[a-zA-Z]+";
 
     private LuceneMorphology ruMorph;
     private LuceneMorphology enMorph;
@@ -40,7 +38,6 @@ public class LemmaServiceImpl implements LemmaService {
         }
     }
 
-    @Override
     public void addLemmas(Page page) {
         Map<String, Integer> lemmas = null;
 
@@ -61,7 +58,6 @@ public class LemmaServiceImpl implements LemmaService {
         }
     }
 
-    @Override
     public Map<String, Integer> parseLemmas(String string, Boolean isText) {
         String regex = "[^а-яА-Яa-zA-Z\s]";
 
@@ -102,41 +98,8 @@ public class LemmaServiceImpl implements LemmaService {
         return lemmas;
     }
 
-    @Override
     public List<String> getNormalForms(String word) {
         return word.matches(ruRegex) ? ruMorph.getNormalForms(word) :
                 word.matches(enRegex) ? enMorph.getNormalForms(word) : new ArrayList<>();
     }
-
-    @Override
-    public Lemma findLemmaById(Integer id) {
-        return lemmaRepository.findLemmaById(id);
-    }
-
-    @Override
-    public Integer countLemmasBySiteId(Site site) {
-        return lemmaRepository.countAllBySite(site);
-    }
-
-    @Override
-    public Integer countAllLemmas() {
-        return Math.toIntExact(lemmaRepository.count());
-    }
-
-    @Override
-    public List<Lemma> findLemmasBySite(Site site) {
-        return lemmaRepository.findLemmaBySite(site);
-    }
-
-    @Override
-    public List<Lemma> findLemmaByLemmaAndSite(String lemma, String siteId) {
-        return lemmaRepository.findLemmaByLemmaAndSite(lemma, siteId);
-    }
-
-    @Override
-    public Integer findFrequencyByLemmaAndSite(String lemma, String siteId) {
-        return lemmaRepository.findFrequencyByLemmaAndSite(lemma, siteId).stream().findFirst().orElse(0);
-    }
-
-
 }

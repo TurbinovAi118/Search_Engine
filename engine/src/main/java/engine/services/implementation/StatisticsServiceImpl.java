@@ -5,9 +5,10 @@ import engine.dto.statistics.StatisticsData;
 import engine.dto.statistics.StatisticsResponse;
 import engine.dto.statistics.TotalStatistics;
 import engine.models.Site;
-import engine.services.LemmaService;
+import engine.repositories.LemmaRepository;
+import engine.repositories.PageRepository;
+import engine.repositories.SiteRepository;
 import engine.services.PageService;
-import engine.services.SiteService;
 import engine.services.StatisticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,13 +20,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StatisticsServiceImpl implements StatisticsService {
 
-    private final SiteService siteService;
-    private final PageService pageService;
-    private final LemmaService lemmaService;
+    private final SiteRepository siteRepository;
+    private final PageRepository pageRepository;
+    private final LemmaRepository lemmaRepository;
 
     @Override
     public StatisticsResponse getStatistics() {
-        List<Site> sitesList = siteService.list();
+        List<Site> sitesList = new ArrayList<>();
+        siteRepository.findAll().forEach(sitesList::add);
+
         TotalStatistics total = new TotalStatistics();
         total.setSites(sitesList.size());
         total.setIndexing(IndexingServiceImpl.isIndexing);
@@ -39,8 +42,8 @@ public class StatisticsServiceImpl implements StatisticsService {
             DetailedStatisticsItem item = new DetailedStatisticsItem();
             item.setName(site.getSiteName());
             item.setUrl(url);
-            item.setPages(pageService.countPagesBySiteId(site));
-            item.setLemmas(lemmaService.countLemmasBySiteId(site));
+            item.setPages(pageRepository.countAllBySite(site));
+            item.setLemmas(lemmaRepository.countAllBySite(site));
             item.setError(site.getLastError());
             item.setStatusTime(site.getStatusTime());
             item.setStatus(site.getStatus());

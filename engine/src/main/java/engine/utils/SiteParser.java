@@ -2,11 +2,9 @@ package engine.utils;
 
 import engine.models.Page;
 import engine.models.Site;
-import engine.services.LemmaService;
-import engine.services.PageService;
-import engine.services.SiteService;
+import engine.repositories.PageRepository;
 import engine.services.implementation.IndexingServiceImpl;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -18,16 +16,16 @@ import java.util.concurrent.RecursiveAction;
 import java.util.stream.Collectors;
 
 
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class SiteParser extends RecursiveAction {
 
     private final Site site;
     private final String currentUrl;
     private static String path;
 
-    private final PageService pageService;
-    private final SiteService siteService;
-    private final LemmaService lemmaService;
+    private final PageRepository pageRepository;
+    private final SitePatcher sitePatcher;
+    private final LemmaParser lemmaParser;
 
     private synchronized boolean checkLink(String url) {
         path = site.getSiteUrl().endsWith("/") ?
@@ -44,7 +42,7 @@ public class SiteParser extends RecursiveAction {
                 && !path.contains("&")
                 && !path.substring(path.lastIndexOf("/")).contains("#")
                 && !IndexingServiceImpl.pageList.stream().map(Page::getPath).collect(Collectors.toList()).contains(path)
-                && !pageService.existPageByPath(path);
+                && !pageRepository.existsByPath(path);
     }
 
     private boolean checkType(String url) {
@@ -106,20 +104,21 @@ public class SiteParser extends RecursiveAction {
                 multiInsertPages();
 
             if (statusCode == 200) {
-                SiteParser task = new SiteParser(site, href, pageService, siteService, lemmaService);
+                SiteParser task = new SiteParser(site, href, pageRepository, sitePatcher, lemmaParser);
                 task.fork();
             }
         }
     }
 
     private void multiInsertPages() {
-        List<Page> pagesForLemmas = pageService.addAll(IndexingServiceImpl.pageList);
+        List<Page> pagesForLemmas = new ArrayList<>();
+        pageRepository.saveAll(IndexingServiceImpl.pageList).forEach(pagesForLemmas::add);
 
         for (Page page : pagesForLemmas) {
-            lemmaService.addLemmas(page);
+            lemmaParser.addLemmas(page);
         }
 
         IndexingServiceImpl.pageList.clear();
-        siteService.patch(site);
+        sitePatcher.patch(site);
     }
 }

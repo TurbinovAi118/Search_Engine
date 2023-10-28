@@ -1,6 +1,6 @@
 package engine.utils;
 
-import engine.services.LemmaService;
+import lombok.RequiredArgsConstructor;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -8,20 +8,17 @@ import org.jsoup.select.Elements;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 public class SnippetParser {
 
-    private final LemmaService lemmaService;
-
-    public SnippetParser(LemmaService lemmaService) {
-        this.lemmaService = lemmaService;
-    }
+    private final LemmaParser lemmaParser;
 
     public Map<String, Integer> defineQueryWordsInLemmas(String[] queryList, Map<String, Integer> sortedQueryLemmas) {
         Map<String, Integer> queryWordsToLemmas = new HashMap<>();
         for (String queryWord : queryList) {
 
             Map<String, Integer> lemmasInQuery = new HashMap<>();
-            lemmaService.getNormalForms(queryWord).forEach(word -> {
+            lemmaParser.getNormalForms(queryWord).forEach(word -> {
                 if (sortedQueryLemmas.containsKey(word)) {
                     lemmasInQuery.put(word, sortedQueryLemmas.get(word));
                 }
@@ -75,13 +72,13 @@ public class SnippetParser {
         for (String word : textWords) {
             textList.add(word);
             try {
-                textLemmas.add(lemmaService.getNormalForms(word.replaceAll(regex, "").toLowerCase(Locale.ROOT)));
+                textLemmas.add(lemmaParser.getNormalForms(word.replaceAll(regex, "").toLowerCase(Locale.ROOT)));
             } catch (Exception e) {
                 textLemmas.add(new ArrayList<>());
             }
         }
 
-        queryWords.forEach(word -> queryLemmas.add(lemmaService.getNormalForms(word)));
+        queryWords.forEach(word -> queryLemmas.add(lemmaParser.getNormalForms(word)));
 
         StringJoiner queryLemmasJoiner = new StringJoiner(" ");
         queryLemmas.forEach(list -> queryLemmasJoiner.add(String.join(" ", list)));
