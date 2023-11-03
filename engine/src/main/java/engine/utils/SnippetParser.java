@@ -33,7 +33,8 @@ public class SnippetParser {
         String maxRelevanceQueryWord = queryLemmas.entrySet().stream()
                 .min(Map.Entry.comparingByValue(Comparator.reverseOrder())).get().getKey();
 
-        Elements foundElements = doc.body().getElementsContainingOwnText(String.join(" ", queryLemmas.keySet())).size() > 0 ?
+        Elements foundElements = doc.body()
+                .getElementsContainingOwnText(String.join(" ", queryLemmas.keySet())).size() > 0 ?
                 doc.body().getElementsContainingOwnText(String.join(" ", queryLemmas.keySet())) :
                 doc.body().getElementsContainingOwnText(maxRelevanceQueryWord);
 
@@ -72,7 +73,8 @@ public class SnippetParser {
         for (String word : textWords) {
             textList.add(word);
             try {
-                textLemmas.add(lemmaParser.getNormalForms(word.replaceAll(regex, "").toLowerCase(Locale.ROOT)));
+                textLemmas.add(lemmaParser.getNormalForms(word.replaceAll(regex, "")
+                        .toLowerCase(Locale.ROOT)));
             } catch (Exception e) {
                 textLemmas.add(new ArrayList<>());
             }
@@ -98,7 +100,8 @@ public class SnippetParser {
                 forWhile = false;
             else {
                 textLemmasSub = textLemmas.subList(firstWordIndex + 1, textLemmas.size());
-                int common = (!textLemmasSub.contains(queryLemmas.get(0))) ? -1 : textLemmasSub.indexOf(queryLemmas.get(0));
+                int common = (!textLemmasSub.contains(queryLemmas.get(0))) ?
+                        -1 : textLemmasSub.indexOf(queryLemmas.get(0));
                 firstWordIndex += (common == -1) ? -(firstWordIndex + 1) : common + 1;
             }
             if (firstWordIndex == -1)
@@ -120,8 +123,10 @@ public class SnippetParser {
         int indexOfFirstComma = elementText.substring(0, indexOfCommon).lastIndexOf(",");
         int indexOfLastComma = elementText.substring(lastIndexOfCommon).indexOf(",");
 
-        String startOfSnippet = elementText.substring(indexOfFirstComma == -1 ? 0 : indexOfFirstComma + 1, lastIndexOfCommon);
-        String endOfSnippet = elementText.substring(lastIndexOfCommon, (indexOfLastComma == -1 ? elementText.length() : lastIndexOfCommon + indexOfLastComma));
+        String startOfSnippet =
+                elementText.substring(indexOfFirstComma == -1 ? 0 : indexOfFirstComma + 1, lastIndexOfCommon);
+        String endOfSnippet = elementText.substring(lastIndexOfCommon,
+                (indexOfLastComma == -1 ? elementText.length() : lastIndexOfCommon + indexOfLastComma));
         String text = startOfSnippet + endOfSnippet;
         text = text.trim();
 

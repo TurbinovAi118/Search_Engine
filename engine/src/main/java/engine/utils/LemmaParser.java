@@ -41,7 +41,8 @@ public class LemmaParser {
     public void addLemmas(Page page) {
         Map<String, Integer> lemmas = null;
 
-        boolean invalid = String.valueOf(page.getResponseCode()).startsWith("4") || String.valueOf(page.getResponseCode()).startsWith("5");
+        boolean invalid = String.valueOf(page.getResponseCode()).startsWith("4") ||
+                String.valueOf(page.getResponseCode()).startsWith("5");
 
         if (!invalid) {
             lemmas = parseLemmas(page.getContent(), false);
@@ -50,7 +51,8 @@ public class LemmaParser {
         if (lemmas != null) {
             for (String lemma : lemmas.keySet()) {
                 lemmaRepository.add(page.getSite().getId(), lemma);
-                List<Lemma> indexLemmas = lemmaRepository.findLemmaByLemmaAndSite(lemma, String.valueOf(page.getSite().getId()));
+                List<Lemma> indexLemmas =
+                        lemmaRepository.findLemmaByLemmaAndSite(lemma, String.valueOf(page.getSite().getId()));
                 for (Lemma indexLemma : indexLemmas) {
                     indexRepository.save(new Index(page, indexLemma, lemmas.get(lemma)));
                 }
@@ -60,7 +62,6 @@ public class LemmaParser {
 
     public Map<String, Integer> parseLemmas(String string, Boolean isText) {
         String regex = "[^а-яА-Яa-zA-Z\s]";
-
         String elementRegex = "<[^<>]*>";
 
         String text = isText ? string : Jsoup.parse(string).text().replaceAll(elementRegex, "");
@@ -80,7 +81,8 @@ public class LemmaParser {
                 continue;
             List<String> checkList = new ArrayList<>();
             wordInfo.stream().map(info -> info.split(" ")).forEach(list -> checkList.addAll(List.of(list)));
-            if (!checkList.contains("ПРЕДЛ") && !checkList.contains("СОЮЗ") && !checkList.contains("ЧАСТ") && !checkList.contains("МЕЖД")) {
+            if (!checkList.contains("ПРЕДЛ") && !checkList.contains("СОЮЗ") &&
+                    !checkList.contains("ЧАСТ") && !checkList.contains("МЕЖД")) {
                 allLemmas.addAll(wordInfo);
             }
         }

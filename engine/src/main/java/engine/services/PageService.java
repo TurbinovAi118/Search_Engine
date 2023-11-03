@@ -54,7 +54,8 @@ public class PageService {
         Optional<Site> siteOptional = siteRepository.findBySiteUrl(siteURL).isPresent() ?
                 siteRepository.findBySiteUrl(siteURL) : siteRepository.findBySiteUrl(siteURL+"/");
         if (siteOptional.isEmpty()){
-            siteForPage = new Site(SiteStatus.INDEXING, LocalDateTime.now(), null, siteConfig.getUrl(), siteConfig.getName());
+            siteForPage = new Site(SiteStatus.INDEXING, LocalDateTime.now(),
+                    null, siteConfig.getUrl(), siteConfig.getName());
             siteRepository.save(siteForPage);
         } else
             siteForPage = siteOptional.get();

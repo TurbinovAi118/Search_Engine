@@ -49,7 +49,8 @@ public class IndexingServiceImpl implements IndexingService {
 
         isIndexing = true;
         executor = Executors.newSingleThreadExecutor();
-        futureIndexer = new FutureTask<>(new SiteIndexer(sitePatcher, lemmaParser, siteRepository, pageRepository, sites), "");
+        futureIndexer = new FutureTask<>(new SiteIndexer(sitePatcher, lemmaParser,
+                siteRepository, pageRepository, sites), "");
         executor.submit(futureIndexer);
         executor.shutdown();
 
@@ -108,5 +109,4 @@ public class IndexingServiceImpl implements IndexingService {
             }
         }
     }
-
 }

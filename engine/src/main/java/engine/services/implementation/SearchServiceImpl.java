@@ -36,10 +36,9 @@ public class SearchServiceImpl implements SearchService {
         int limit = Integer.parseInt(body.get("limit"));
         int offset = Integer.parseInt(body.get("offset"));
         String query = body.get("query").toLowerCase(Locale.ROOT);
-        String site = body.get("site") != null ?
-                //String.valueOf(
-                        siteRepository.findBySiteUrl(body.get("site")).isPresent() ? String.valueOf(siteRepository.findBySiteUrl(body.get("site"))) : String.valueOf(siteRepository.findBySiteUrl(body.get("site")+"/").get().getId()) :
-                "%";
+        String site = body.get("site") != null ? siteRepository.findBySiteUrl(body.get("site")).isPresent() ?
+                                String.valueOf(siteRepository.findBySiteUrl(body.get("site"))) :
+                                String.valueOf(siteRepository.findBySiteUrl(body.get("site")+"/").get().getId()) : "%";
 
         Map<String, Integer> sortedQueryLemmas = parseFilterAndSortQueryLemmas(query, site);
 
@@ -86,7 +85,8 @@ public class SearchServiceImpl implements SearchService {
         if (queryLemmas.size() == 0)
             return null;
 
-        queryLemmas.replaceAll((k, v) -> lemmaRepository.findFrequencyByLemmaAndSite(k, site).stream().findFirst().orElse(0));
+        queryLemmas.replaceAll((k, v) -> lemmaRepository
+                .findFrequencyByLemmaAndSite(k, site).stream().findFirst().orElse(0));
 
         queryLemmas.values().removeIf(value -> value == 0);
 
@@ -104,7 +104,8 @@ public class SearchServiceImpl implements SearchService {
                 }
             }
             cacheMap = cacheMap.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+                    .collect(Collectors
+                            .toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
             if (!cacheMap.isEmpty()) {
                 String firstKey = cacheMap.keySet().stream().findFirst().get();
                 resultMap.put(firstKey, cacheMap.get(firstKey));
@@ -144,7 +145,8 @@ public class SearchServiceImpl implements SearchService {
                         Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
     }
 
-    private List<SearchData> collectResponse(Map<Page, Float> sortedFoundPages, String query, Map<String, Integer> sortedLemmas) {
+    private List<SearchData> collectResponse(Map<Page, Float> sortedFoundPages, String query,
+                                             Map<String, Integer> sortedLemmas) {
         List<SearchData> data = new ArrayList<>();
         float maxRelevancy = sortedFoundPages.values().stream().max(Float::compare).get();
 
@@ -155,8 +157,8 @@ public class SearchServiceImpl implements SearchService {
 
         for (Page page : sortedFoundPages.keySet()) {
 
-            String url = page.getSite().getSiteUrl().endsWith("/") ? page.getSite().getSiteUrl().replaceFirst(".$", "") :
-                    page.getSite().getSiteUrl();
+            String url = page.getSite().getSiteUrl().endsWith("/") ?
+                    page.getSite().getSiteUrl().replaceFirst(".$", "") : page.getSite().getSiteUrl();
             String siteName = page.getSite().getSiteName();
             String path = page.getPath();
             float relevance = sortedFoundPages.get(page) / maxRelevancy;
